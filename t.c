@@ -240,7 +240,7 @@ void draw()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, first_pass_framebuffer);
     
-    float t = t_now-t_start;
+    float t = paused?t_pause_start-t_start:t_now-t_start;
     
     for(int i=0; i<double_buffered+1; ++i)
     {
@@ -298,6 +298,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     break;
                 case VK_SPACE:
                     // pause/unpaused render timer
+                    if(!paused)
+                        t_pause_start = t_now;
+                    else
+                        t_start += t_now-t_pause_start;
                     paused = !paused;
                     break;
             }
