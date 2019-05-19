@@ -17,7 +17,7 @@
 
 #define DEBUG
 
-const char *demoname = "Tunguska/Team210";
+const char *demoname = "GPN19-Visuals/Team210";
 unsigned int muted = 0.;
 
 int _fltused = 0;
@@ -141,8 +141,9 @@ void debugp(int program)
 #define printf(a)
 #endif //DEBUG
 
-int w = 1920, h = 1080;
-
+int w = 1014, h = 768;
+WAVEHDR headers[2];
+HWAVEIN wi;
 int
     // Loading bar
     load_handle,
@@ -160,7 +161,9 @@ int
     
     // Antialiasing
     fsaa = 25;
-
+int buffer_size = 256;
+int double_buffered = 0;
+    
 // Demo globals
 double t_now = 0., t_start = 0., t_pause_start = 0.;
 unsigned int loading = 1;
@@ -233,14 +236,19 @@ void updateBar()
 }
 
 #include "gfx/symbols.h"
-
-// Pure opengl drawing code, essentially cross-platform
 void draw()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, first_pass_framebuffer);
     
     float t = t_now-t_start;
-    printf("%le\n", t);
+    
+    for(int i=0; i<double_buffered+1; ++i)
+    {
+        if(headers[i].dwFlags & WHDR_DONE)
+        {
+            // Update FFT here
+        }
+    }
     
     if(scene_override)
     {
@@ -386,18 +394,15 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     wca.lpszClassName = L"Settings";
     RegisterClass(&wca);
     HWND lwnd = CreateWindowEx(
-        0,                              // Optional window styles.
-        L"Settings",                     // Window class
-        demoname,    // Window text
-        WS_OVERLAPPEDWINDOW,            // Window style
-
-        // Size and position
+        0,
+        L"Settings",
+        demoname,
+        WS_OVERLAPPEDWINDOW,
         200, 200, 300, 300,
-
-        NULL,       // Parent window    
-        NULL,       // Menu
-        hInstance,  // Instance handle
-        NULL        // Additional application data
+        NULL, 
+        NULL,
+        hInstance,
+        NULL
         );
     
     // Add "Resolution: " text
@@ -416,7 +421,7 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     SendMessage(hResolutionComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (fullhd)); 
     SendMessage(hResolutionComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (halfhd));
     SendMessage(hResolutionComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (normal));
-    SendMessage(hResolutionComboBox, CB_SETCURSEL, 0, 0);
+    SendMessage(hResolutionComboBox, CB_SETCURSEL, 2, 0);
     
     // Add mute checkbox
     HWND hMuteCheckbox = CreateWindow(WC_BUTTON, TEXT("Mute"),
@@ -704,6 +709,44 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     LoadPrograms();
     
     glUseProgram(0);
+    
+    // Init sound capture
+    WAVEFORMATEX wfx;
+    wfx.wFormatTag = WAVE_FORMAT_PCM;
+    wfx.nChannels = 1;                    
+    wfx.nSamplesPerSec = 44100.;
+    wfx.wBitsPerSample = 16;
+    wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
+    wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
+    
+    int result = waveInOpen(&wi,            
+                WAVE_MAPPER,    
+                &wfx,           
+                NULL,NULL,      
+                CALLBACK_NULL | WAVE_FORMAT_DIRECT  
+              );
+    printf("WaveInOpen: %d\n", result);
+    
+    int bsize = buffer_size*wfx.wBitsPerSample*wfx.nChannels/8;
+    char * buffers;
+    if(double_buffered == 1)
+        buffers = (char*)malloc(2*bsize);
+    else
+        buffers = (char*)malloc(bsize);
+    
+    for(int i = 0; i < double_buffered+1; ++i)
+    {
+        printf("Buffer i:\n");
+        headers[i].lpData =         buffers+i*bsize;             
+        headers[i].dwBufferLength = bsize;
+        result = waveInPrepareHeader(wi, &headers[i], sizeof(headers[i]));
+        printf("WaveInPrepareHeader: %d\n", result);
+        result = waveInAddBuffer(wi, &headers[i], sizeof(headers[i]));
+        printf("WaveInAddBuffer: %d\n", result);
+    }
+    
+    result = waveInStart(wi);
+    printf("WaveInStart: %d\n", result);
     
     // Main loop
     t_start = (double)milliseconds_now()*1.e-3;
