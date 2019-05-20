@@ -175,9 +175,8 @@ int double_buffered = 0;
     
 // Demo globals
 double t_now = 0., t_start = 0., t_pause_start = 0.;
-unsigned int loading = 1;
-unsigned int scene_override = 0, 
-    override_index = 0;
+unsigned int loading = 1,
+    override_index = 1;
 
 // Music shader globals
 unsigned int paused = 0;
@@ -413,13 +412,6 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     }
                 }
                     break;
-                case 6:
-                    muted = !muted;
-                    if(muted)
-                        SendMessage(hSender, BM_SETCHECK, BST_CHECKED, 0);
-                    else
-                        SendMessage(hSender, BM_SETCHECK, BST_UNCHECKED, 0);
-                    break;
                 case 7:
                     DestroyWindow(hwnd);
                     PostQuitMessage(0);
@@ -430,15 +422,9 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     fsaa = (index + 1)*(index + 1);
                 }
                     break;
-                case 9: // Texture buffer size
-                {
-                    int index = SendMessage(hSender, CB_GETCURSEL, 0, 0);
-                }
-                    break;
                 case 10:
                 {
                     override_index = SendMessage(hSender, CB_GETCURSEL, 0, 0);
-                    scene_override = override_index > 0;
                 } 
                 break;
             }
@@ -498,9 +484,10 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     
     // Add mute checkbox
     HWND hMuteCheckbox = CreateWindow(WC_BUTTON, TEXT("Mute"),
-                     WS_VISIBLE | WS_CHILD | BS_CHECKBOX,
+                     WS_VISIBLE | WS_CHILD | BS_CHECKBOX, 
                      10, 40, 100, 20,        
                      lwnd, (HMENU) 6, hInstance, NULL);
+    EnableWindow(hMuteCheckbox, FALSE);
     
     // Add "Antialiasing: " text
     HWND hAntialiasingText = CreateWindow(WC_STATIC, "FSAA: ", WS_VISIBLE | WS_CHILD | SS_LEFT, 10,65,100,100, lwnd, NULL, hInstance, NULL);
@@ -526,12 +513,14 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     
     // Add "SFX Buffer: " text
     HWND hTXAAText = CreateWindow(WC_STATIC, "SFX Buffer: ", WS_VISIBLE | WS_CHILD | SS_LEFT, 10,95,100,100, lwnd, NULL, hInstance, NULL);
+//     EnableWindow(hTXAAText, FALSE);
     
     // Add SFX buffer size combo box
     HWND hTXAAComboBox= CreateWindow(WC_COMBOBOX, TEXT(""), 
      CBS_DROPDOWN | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
      100, 90, 175, 280, lwnd, (HMENU)9, hInstance,
      NULL);
+    EnableWindow(hTXAAComboBox, FALSE);
     
     // Populate with entries
     const char *buf128= "128^2 px",
@@ -542,7 +531,6 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     SendMessage(hTXAAComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (buf256));
     SendMessage(hTXAAComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (buf512)); 
     SendMessage(hTXAAComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (buf1024));
-    //SendMessage(hTXAAComboBox, CB_SETCURSEL, 3, 0);
     SendMessage(hTXAAComboBox, CB_SETCURSEL, 0, 0);
 
     // Add "Antialiasing: " text
@@ -555,29 +543,28 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
      NULL);
     
     // Populate with entries
-    const char *all_scenes = "All scenes",
-        *logo210_scene= "Team210 Logo";
-//         *logoendeavor_scene = "Planet rotation",
-//         *surface_scene = "Surface with pipes",
-//         *hangar_outside_scene = "Hangar outside",
-//         *nr4_scene = "NR4 Graffiti build-up",
-//         *qm_scene = "QM Graffiti build-up",
-//         *trip_scene = "Trip scene",
-//         *fourtwenty_scene = "Four-twenty scene",
-//         *greet_scene = "Greetings",
-//         *solskogen_scene = "Solskogen";
-    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (all_scenes)); 
-    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (logo210_scene)); 
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (logoendeavor_scene));
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (surface_scene));
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (hangar_outside_scene));
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (nr4_scene)); 
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (qm_scene)); 
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (trip_scene));
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (fourtwenty_scene));
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (greet_scene));
-//     SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (solskogen_scene));
-    SendMessage(hSceneComboBox, CB_SETCURSEL, 0, 0);
+    const char *scene_0= "Scene 0",
+        *scene_1= "Scene 1",
+        *scene_2= "Scene 2",
+        *scene_3= "Scene 3",
+        *scene_4= "Scene 4",
+        *scene_5= "Scene 5",
+        *scene_6= "Scene 6",
+        *scene_7= "Scene 7",
+        *scene_8= "Scene 8",
+        *scene_9= "Scene 9";
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_0)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_1)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_2)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_3)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_4)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_5)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_6)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_7)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_8)); 
+    SendMessage(hSceneComboBox,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM) (scene_9)); 
+
+    SendMessage(hSceneComboBox, CB_SETCURSEL, 1, 0);
     
     // Add start button
     HWND hwndButton = CreateWindow(WC_BUTTON,"Party!",WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,185,165,90,90,lwnd,(HMENU)7,hInstance,NULL);
@@ -859,4 +846,6 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     }
     return msg.wParam;
 }
+
+
 
