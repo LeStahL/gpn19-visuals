@@ -47,8 +47,7 @@ if(WIN32)
     
     add_subdirectory(thirdparty/fftw-3.3.8)
     find_library(FFTW3_LIBRARY fftw3.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release")
-    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release/fftw3.dll"
-        DESTINATION "${PROJECT_BINARY_DIR}/Release")
+    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release/fftw3.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
     
     include_directories("${PROJECT_SOURCE_DIR}/thirdparty/fftw-3.3.8/api")
     
@@ -59,6 +58,7 @@ if(WIN32)
     # for debug output: User32.lib ucrt.lib msvcrt.lib
     target_link_libraries(gpn19-visuals opengl32.lib Winmm.lib User32.lib ucrt.lib msvcrt.lib ${FFTW3_LIBRARY})
     
+    add_dependencies(gpn19-visuals fftw3.dll)
     add_dependencies(gpn19-visuals minification)
     add_dependencies(gpn19-visuals texture_packing)
     add_dependencies(gpn19-visuals symbolization)

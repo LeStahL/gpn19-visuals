@@ -145,7 +145,8 @@ void debugp(int program)
 int w = 1014, h = 768;
 fftw_complex *in, *out;
 fftw_plan p;
-int NFFT = 1024;
+#define NFFT 1024
+float values[NFFT];
 WAVEHDR headers[2];
 HWAVEIN wi;
 int
@@ -162,6 +163,10 @@ int
     post_resolution_location, 
     post_fsaa_location,
     post_channel0_location,
+    
+    // FFT stuff
+    fft_texture_handle,
+    fft_texture_size,
     
     // Antialiasing
     fsaa = 25;
@@ -250,31 +255,54 @@ void draw()
     {
         if(headers[i].dwFlags & WHDR_DONE)
         {
+            // replace last block in values
+            for(int j=0; j<NFFT-buffer_size; ++j)
+                values[j] = values[j+buffer_size];
+            for(int j=0; j<buffer_size; ++j)
+                values[NFFT-buffer_size+j] = ((float)(*(short *)(headers[i].lpData+2*j))/32767.);
+            //                         values[NFFT-buffer_size+j] = ((float*)headers[i].lpData)[j];
+            
+            // fourier transform values
+            for(int j=0; j<NFFT; ++j)
+            {
+                //                         int low = max(0, j-10);
+                //                         int high = min(NFFT, j+10);
+                //                         in[j][0] = 0.;
+                //                         for(int k=low; k<high; ++k)
+                //                             in[j][0] += values[k] * (.54 - .46*cos(2.*acos(-1.)*(float)k/(float)NFFT));
+                in[j][0] = values[j] * (.54 - .46*cos(2.*acos(-1.)*(float)j/((float)NFFT-1.)));
+                in[j][1] = 0.;
+                in[NFFT+j][0] = 0.;
+                in[NFFT+j][1] = 0.;
+                in[2*NFFT+j][0] = 0.;
+                in[2*NFFT+j][1] = 0.;
+                in[3*NFFT+j][0] = 0.;
+                in[3*NFFT+j][1] = 0.;
+            }
+            fftw_execute(p);
+            
             headers[i].dwFlags = 0;
             headers[i].dwBytesRecorded = 0;
             
             waveInPrepareHeader(wi, &headers[i], sizeof(headers[i]));
             waveInAddBuffer(wi, &headers[i], sizeof(headers[i]));
             
-            fftw_execute(p);
         }
     }
     
-    if(scene_override)
+    if(override_index == 1)
     {
-        if(override_index == 1)
-        {
-            glUseProgram(decayingfactory_program);
-            glUniform1f(decayingfactory_iTime_location, t);
-            glUniform2f(decayingfactory_iResolution_location, w, h);
-        }
+        glUseProgram(decayingfactory_program);
+        glUniform1f(decayingfactory_iTime_location, t);
+        glUniform2f(decayingfactory_iResolution_location, w, h);
     }
-    else
+    else if(override_index == 2)
     {
-            glUseProgram(fogforest_program);
-            glUniform1f(fogforest_iTime_location, t);
-            glUniform2f(fogforest_iResolution_location, w, h);
+        glUseProgram(fogforest_program);
+        glUniform1f(fogforest_iTime_location, t);
+        glUniform2f(fogforest_iResolution_location, w, h);
     }
+    
     quad();
     
     // Render second pass (Post processing) to screen
@@ -314,6 +342,37 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                         t_start += t_now-t_pause_start;
                     paused = !paused;
                     break;
+                case 0x30:
+                    override_index = 0;
+                    break;
+                case 0x31:
+                    override_index = 1;
+                    break;
+                case 0x32:
+                    override_index = 2;
+                    break;
+                case 0x33:
+                    override_index = 3;
+                    break;
+                case 0x34:
+                    override_index = 4;
+                    break;
+                case 0x35:
+                    override_index = 5;
+                    break;
+                case 0x36:
+                    override_index = 6;
+                    break;
+                case 0x37:
+                    override_index = 7;
+                    break;
+                case 0x38:
+                    override_index = 8;
+                    break;
+                case 0x39:
+                    override_index = 9;
+                    break;
+
             }
             break;
             
@@ -767,6 +826,17 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT * 4);
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT * 4);
     p = fftw_plan_dft_1d(NFFT * 4, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    
+        // Initialize FFT texture
+    fft_texture_size = (int)log2(NFFT)+1;
+    printf("fft texture width is: %d\n", fft_texture_size);
+    glGenTextures(1, &fft_texture_handle);
+    glBindTexture(GL_TEXTURE_1D, fft_texture_handle);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
     
     // Main loop
     t_start = (double)milliseconds_now()*1.e-3;
