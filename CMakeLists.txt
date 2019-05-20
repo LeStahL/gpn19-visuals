@@ -45,12 +45,19 @@ if(WIN32)
         COMMAND python symbolize.py decayingfactory.frag fogforest.frag -o symbols.h
     )
     
+    add_subdirectory(thirdparty/fftw-3.3.8)
+    find_library(FFTW3_LIBRARY fftw3.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release")
+    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release/fftw3.dll"
+        DESTINATION "${PROJECT_BINARY_DIR}/Release")
+    
+    include_directories("${PROJECT_SOURCE_DIR}/thirdparty/fftw-3.3.8/api")
+    
     add_definitions(/Gy /O1 /fp:fast /GR- /GS- /MT)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:demo /SUBSYSTEM:Windows  /OPT:REF  /OPT:ICF=10 /VERBOSE /NODEFAULTLIB") 
     add_executable(gpn19-visuals t.c)
     
     # for debug output: User32.lib ucrt.lib msvcrt.lib
-    target_link_libraries(gpn19-visuals opengl32.lib Winmm.lib User32.lib ucrt.lib msvcrt.lib)
+    target_link_libraries(gpn19-visuals opengl32.lib Winmm.lib User32.lib ucrt.lib msvcrt.lib ${FFTW3_LIBRARY})
     
     add_dependencies(gpn19-visuals minification)
     add_dependencies(gpn19-visuals texture_packing)

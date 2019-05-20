@@ -34,6 +34,7 @@ int _fltused = 0;
 
 #include <GL/gl.h>
 #include "glext.h"
+#include "fftw3.h"
 
 // Standard library and CRT rewrite for saving executable size
 void *memset(void *ptr, int value, size_t num)
@@ -142,6 +143,9 @@ void debugp(int program)
 #endif //DEBUG
 
 int w = 1014, h = 768;
+fftw_complex *in, *out;
+fftw_plan p;
+int NFFT = 1024;
 WAVEHDR headers[2];
 HWAVEIN wi;
 int
@@ -246,7 +250,13 @@ void draw()
     {
         if(headers[i].dwFlags & WHDR_DONE)
         {
-            // Update FFT here
+            headers[i].dwFlags = 0;
+            headers[i].dwBytesRecorded = 0;
+            
+            waveInPrepareHeader(wi, &headers[i], sizeof(headers[i]));
+            waveInAddBuffer(wi, &headers[i], sizeof(headers[i]));
+            
+            fftw_execute(p);
         }
     }
     
@@ -723,6 +733,7 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     wfx.nBlockAlign = wfx.wBitsPerSample * wfx.nChannels / 8;
     wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
     
+    // Prepare mic
     int result = waveInOpen(&wi,            
                 WAVE_MAPPER,    
                 &wfx,           
@@ -751,6 +762,11 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     
     result = waveInStart(wi);
     printf("WaveInStart: %d\n", result);
+    
+    //FFTW3 Setup
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT * 4);
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT * 4);
+    p = fftw_plan_dft_1d(NFFT * 4, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
     
     // Main loop
     t_start = (double)milliseconds_now()*1.e-3;
