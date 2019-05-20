@@ -30,251 +30,53 @@ const float pi = acos(-1.);
 const vec3 c = vec3(1.0, 0.0, -1.0);
 float a = 1.0;
 
-// Hash function
 void rand(in vec2 x, out float num);
-void lfnoise(in vec2 t, out float num);
-void mfnoise(in vec2 x, in float fmin, in float fmax, in float alpha, out float num);
-void dbox(in vec2 x, in vec2 b, out float d);
-void dbox3(in vec3 x, in vec3 b, out float d);
-void dvoronoi(in vec2 x, out float d, out vec2 ind);
-void normal(in vec3 x, out vec3 n);
+void zextrude(in float z, in float d2d, in float h, out float d);
 void stroke(in float d0, in float s, out float d);
-void add(in vec2 sda, in vec2 sdb, out vec2 sdf);
+void smoothmin(in float a, in float b, in float k, out float dst);
+void dhexagonpattern(in vec2 p, out float d, out vec2 ind);
+void normal(in vec3 x, out vec3 n);
 
-void colorize_wall_concrete(in vec2 x, out vec3 col)
+float mat;
+void scene(in vec3 x, out vec2 d)
 {
-    float w = .4,
-        d;
-    float n, n2, n3, n4;
-    mfnoise(x, 8.,8.e2, .68, n);
-    lfnoise(2.*x, n2);
-    col = mix(vec3(0.85,0.84,0.82), vec3(0.07,0.05,0.04), .5+.5*n);
+    d = c.xx;
     
-     // white
-    col = mix(col, mix(vec3(0.85,0.84,0.82), vec3(0.86,0.83,0.79), .8+.2*n), smoothstep(.0,.3,n*n2));
+    x.z -= .5*iTime;
     
-    // Red paint
-    mfnoise(x, .4,2.e2, .48, n3);
+    float phi = atan(x.y, x.x),
+        dhex;
+    vec2 ind;
+    dhexagonpattern(2.*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);
+    rand(ind,mat);
+    stroke(dhex, .1, dhex);
+    mat *= (1.-iScale);
+    //d.x = length(x.xy)-mix(.5,.45,smoothstep(.1,-.1,dhex));
+    d.x = min(d.x, length(x.xy)+.2*mat-mix(.5,.55+.2*mat,smoothstep(.2,-.2,dhex)));
     
-    //gray
-    col = mix(col, c.yyy, smoothstep(-.2,.4, .3+n3-n));
-    float na;
-    lfnoise(iTime*c.xx, na);
-    col = mix(col, c.yyy, (.5+.5*na)*smoothstep(.1,-.1,abs(.3+n3-n)-.1));
-    col = mix(col, mix(vec3(0.45,0.06,0.01), vec3(0.69,0.14,0.04), (.1+.9*n)*smoothstep(-.1,.4,.3+1.4*n3+.7*n)), smoothstep(.3,.7,.3+1.4*n3-.5*n));
+    stroke(d.x, .04, d.x);
 }
 
-void colorize_tiles(in vec2 x, out vec3 col)
-{
-    //x.x += .2*iTime;
+// Texture
+void colorize(in vec2 x, out vec3 col)
+{    
+    float phi = .1*iTime;
     
-    float w = .4,
-        d;
-    vec2 y = mod(x, w)-.5*w;
-    float n;
-    mfnoise(x, 4.,4.e2, .48, n);
+    vec3 white = vec3(0.89,0.44,0.23),
+        gray =vec3(0.25,0.23,0.21);
+    float size = .1;
     
-    dbox(y, .47*w*c.xx, d);
-    d += .005*n;
-    col = mix(vec3(0.90,0.84,0.80),1.2*vec3(1.00,0.95,0.86), .5+.5*n);
     
-    // Dirt/rust
-    float nr;
-    mfnoise(x*vec2(12.,1.), 1.,1.e1, .85, nr);
-    col = mix(col, 1.4*vec3(0.80,0.58,0.22), clamp(.1+.9*nr,0.,1.));
+    vec2 y = mod(x,size)-.5*size;
+    y = abs(y)-.001;
     
-    // cracks
-    float v;
-    vec2 vi;
-    dvoronoi((x.xy-.1*n)/w,v, vi); 
-    col = mix(col, vec3(0.54,0.48,0.45), smoothstep(1.5/iResolution.y, -1.5/iResolution.y, abs(v)-.01));
-   
-    // joint
-    col = mix(vec3(0.22,0.22,0.22), col, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d));
-    
-    // holes
-    float na;
-    mfnoise(x, 4.,4.e2, .98, na);
-    col = mix(col, mix(vec3(0.54,0.48,0.45), .0*c.xxx, .5+.5*na), smoothstep(1.5/iResolution.y, -1.5/iResolution.y, .3+n));
-}
-
-void colorize_wall(in vec2 x, out vec3 col)
-{
-    if(x.y > 0.) colorize_wall_concrete(x, col);
-    else colorize_tiles(x, col);
-}
-
-void colorize_pipes(in vec2 x, out vec3 col)
-{
-    float n, nlo;
-    
-    mfnoise(x,4.8e1, 4.8e3, .65, n);
-    lfnoise(6.*x, nlo);
-    col = mix(vec3(0.37,0.07,0.00), vec3(0.62,0.63,0.66), .5+.5*n);
-    
-    vec3 c1 = mix(vec3(1.00,0.84,0.70), vec3(0.37,0.07,0.00), .5+.5*n);
-    col = mix(col, c1, smoothstep(n-.1,n+.1,nlo));
-    col = mix(col, vec3(0.64,0.39,0.32), (.5+.5*n)*smoothstep(n-.1,n+.1,nlo));
-    
-    float nb;
-    stroke(n, .1, nb);
-    col = mix(col, vec3(0.58,0.33,0.26), smoothstep(1.5/iResolution.y, -1.5/iResolution.y, nb));
-}
-
-void wall_tiles(in vec3 x, out float d)
-{
-    //x.x += .2*iTime;
-    
-    float n;
-    mfnoise(x.xy, 4.,4.e2, .45, n);
-
-    float w = .4;
-    vec2 y = mod(x.xy, w)-.5*w;
-    dbox(y, .47*w*c.xx, d);
-    
-    // cracks
-    float v;
-    vec2 vi;
-    dvoronoi((x.xy-.1*n)/w,v, vi); 
-    
-    v = mix(v, 1., smoothstep(1.5/iResolution.y, -1.5/iResolution.y, .3+n));
-    
-    d = x.z
-        + .008*n
-        + .2*smoothstep(1.5/iResolution.y, -1.5/iResolution.y, abs(v)-.01)
-        +.3*smoothstep(2.5/iResolution.y, -2.5/iResolution.y, d+.005*n)*smoothstep(-1.5/iResolution.y,1.5/iResolution.y,.3+n)
-        -.2*(.5*n+.5)*smoothstep(1.5/iResolution.y,-1.5/iResolution.y,.3+n);
-}
-
-void wall_concrete(in vec3 x, out float d)
-{
-    float n;
-    mfnoise(x.xy, 8.,8.e2, .68, n);
-    
-    d = x.z
-        +.015*(.5+.5*n);
-}
-
-void pipes(in vec3 x, out float d)
-{
-    float n, nlo, na;
-    mfnoise(x.xy,4.8e1, 4.8e3, .65, na);
-    mfnoise(x.xy,1.8e1, 4.8e3, .55, n);
-    lfnoise(6.*x.xy, nlo);
-    
-    d = x.z+.015*n-.015*smoothstep(na-.1,na+.1,nlo);
-}
-
-void pipes_normal(in vec3 x, out vec3 n)
-{
-    const float dx = 5.e-4;
-    float s;
-    
-    pipes(x,s);
-    pipes(x+dx*c.xyy, n.x);
-    pipes(x+dx*c.yxy, n.y);
-    pipes(x+dx*c.yyx, n.z);
-    n = normalize(n-s);
-}
-
-void wall_tiles_normal(in vec3 x, out vec3 n)
-{
-    const float dx = 5.e-4;
-    float s;
-    
-    wall_tiles(x,s);
-    wall_tiles(x+dx*c.xyy, n.x);
-    wall_tiles(x+dx*c.yxy, n.y);
-    wall_tiles(x+dx*c.yyx, n.z);
-    n = normalize(n-s);
-}
-
-void wall_concrete_normal(in vec3 x, out vec3 n)
-{
-    const float dx = 5.e-4;
-    float s;
-    
-    wall_concrete(x,s);
-    wall_concrete(x+dx*c.xyy, n.x);
-    wall_concrete(x+dx*c.yxy, n.y);
-    wall_concrete(x+dx*c.yyx, n.z);
-    n = normalize(n-s);
-}
-
-void scene(in vec3 x, out vec2 sdf)
-{
-    float d;
-    
-    dbox3(x, 112.*c.xxx, sdf.x);
-    
-    // Remove corridor
-    float w = mix(.4,.38, smoothstep(1.5/iResolution.y,-1.5/iResolution.y,x.y));
-    dbox3(x, vec3(w,1.2*w,56.), d);
-    sdf.x = max(sdf.x, -d);
-    dbox3(vec3(x.xy, abs(mod(x.z,2.)))-.8*c.yyx, vec3(2.,1.2*w,w), d);
-    sdf.x = max(sdf.x, -d);
-    sdf.y = 1.;
-    
-    // Add pipes
-    if(abs(x.x) < .4)
-    {
-        float wa = .1;
-        vec2 sda = vec2(length(vec2(mod(x.x,wa)-.5*wa, x.y-1.2*w))-.4*wa, 2.);
-        add(sdf, sda, sdf);
-    }
-    
-    // Add Water
-    float n, n2;
-    lfnoise(12.*x.xz-iTime*c.yx+.1*iTime*c.xy, n);
-    lfnoise(34.5*x.xz-3.141*iTime*c.yx-.1*iTime*c.xy, n2);
-    vec2 sdb = vec2(x.y+.38-.002*(.7*n+.3*n2),3.);
-    add(sdf, sdb, sdf);
-}
-
-void colorize(in vec3 x, in vec2 s, inout vec3 n, out vec3 col)
-{
-    if(s.y == 1.)
-        {
-            // March volumetric texture
-            if(abs(dot(n,c.xyy))+abs(dot(n,c.yxy)) < 1.e-4)
-            {
-                //Front wall
-                colorize_wall(6.*x.xy, col);
-                if(x.y < 0.) wall_tiles_normal(6.*x*c.xxy, n);
-                else wall_concrete_normal(6.*x*c.xxy, n);
-            }
-            else if(abs(dot(n,c.yxy))+abs(dot(n,c.yyx)) < 1.e-4)
-            {
-                //Side Wall
-                colorize_wall(6.*x.zy, col);
-                if(x.y < 0.) wall_tiles_normal(6.*x.zyx, n);
-                else wall_concrete_normal(6.*x.zyx, n);
-            }
-            else 
-            {
-                // Floor
-                if(x.y < 0.)
-                {
-                    colorize_wall(6.*x.zx-23., col);
-                    wall_tiles_normal(6.*x.zxy-23.*c.xxy, n);
-                }
-                else
-                {
-                    colorize_wall(6.*x.zx+23., col);
-                    wall_concrete_normal(6.*x.zxy+23.*c.xxy, n);
-                }
-                    //col = .2*c.xxx;
-            }
-        }
-        else if(s.y == 2.)
-        {
-            colorize_pipes(6.*x.zx-23., col);
-            pipes_normal(6.*x.zxy-23.*c.xxy, n);
-        }
+    float d = min(y.x,y.y);
+    col = mix(white, gray, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d*mat));
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Set up coordinates
     a = iResolution.x/iResolution.y;
     vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
     vec3 col = c.yyy;
@@ -285,67 +87,54 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         return;
     }
     
-    vec3 t = vec3(uv, 0.)
-            -mix(.3,.7, 0.*smoothstep(0.,1.,sin(pi*iTime)))*iTime*c.yyx // forward
-            +.01*abs(cos(2.*pi*iTime))*c.yxy // up/down
-            + .005*sin(2.*pi*iTime)*c.xyy, // right/left
-        o = c.yyx
-            -.3*iTime*c.yyx
-            +.01*abs(sin(2.*pi*iTime))*c.yxy
-            + .005*sin(2.*pi*iTime)*c.xyy,
+    // Camera setup
+    float pp = .3*iTime;
+    vec3 o = c.yyx,
+        t = c.yyy,
         dir = normalize(t-o),
-        x, n;
-    float d = 0.;
+        r = normalize(c.xyy),
+        u = normalize(cross(r,dir)),
+        n,
+        x,
+        l;
+    t += uv.x*r + uv.y*u;
+    dir = normalize(t-o);
     vec2 s;
-    int N = 300, i;
+    float d = (.3+.2*mat)/length(dir.xy);// -(o.z-.12)/dir.z;
+    int N = 450,
+        i;
     
-    for(i=0; i<N; ++i)
+    // Graph
+    x = o + d * dir;
+    
+    // Actual Scene
     {
-        x = o + d * dir;
-        scene(x, s);
-        if(s.x < 1.e-4) break;
-        d += s.x;
-    }
-      
-    //if(i<N)
-    {
-        normal(x, n);
-        float d0 = d;
-        if(s.y == 3.)
+
+        // Raymarching
+        for(i=0; i<N; ++i)
         {
-            o = x;
-            d = .002;
-            dir = reflect(dir, n);
-            
-            for(i=0; i<N; ++i)
-            {
-                x = o + d * dir;
-                scene(x, s);
-                if(s.x < 1.e-4) break;
-                d += s.x;
-            }
-            
-            //if(i<N)
-                normal(x, n);
-            d = abs(d)+ abs(d0);
+            x = o + d * dir;
+            scene(x,s);
+            if(s.x < 1.e-4) break;
+            d += min(s.x,.005);
         }
-        colorize(x, s, n, col);
-        
-        vec3 l = -abs(normalize(o)/max(d*d,1.));
-        col = .1*col/min(d,4.)
-            + .6*col*abs(dot(l,n))
-            + .3*col*abs(pow(dot(reflect(-l,n),dir),4.));
+
+        // Illumination
+        l = normalize(x+c.yxx);
+        if(i<N)
+        {
+            normal(x,n);
+            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(0.89,0.44,0.23),.5+.5*sin(x.z));
+            col = mix(col,vec3(0.25,0.23,0.21),step(.19,x.z));
+        }
     }
     
-    col = clamp(col, 0., 1.);
+    // Colorize
+    col = .2*col
+        + .9*col*abs(dot(l,n))
+        +.4*col*abs(pow(dot(reflect(-l,n),dir),3.));
     
-    float na;
-    lfnoise(iTime*c.xx, na);
-    vec3 gs = length(col)*c.xxx;
-//     col = mix(col, gs, .5+.5*na);
-    col = mix(col, col*c.xxy, clamp(iScale,0.,1.));
-    
-    fragColor = vec4(col,1.0);
+    fragColor = clamp(vec4(col,1.0),0.,1.);
 }
 
 void main()
