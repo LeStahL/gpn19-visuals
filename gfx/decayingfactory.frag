@@ -36,6 +36,7 @@ void stroke(in float d0, in float s, out float d);
 void smoothmin(in float a, in float b, in float k, out float dst);
 void dhexagonpattern(in vec2 p, out float d, out vec2 ind);
 void normal(in vec3 x, out vec3 n);
+void rot3(in vec3 p, out mat3 rot);
 
 float mat;
 void scene(in vec3 x, out vec2 d)
@@ -125,7 +126,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         {
             normal(x,n);
             col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(0.89,0.44,0.23),.5+.5*sin(x.z));
-            col = mix(col,vec3(0.25,0.23,0.21),step(.19,x.z));
+            col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));
+//             mat3 RR;
+//             rot3(.4*vec3(1.1,1.5,1.9)*iTime-.1*x.z, RR);
+//             col = abs(RR*col);
         }
     }
     

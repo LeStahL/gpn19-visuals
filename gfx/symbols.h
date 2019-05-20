@@ -2,8 +2,8 @@
 #ifndef SYMBOLIZE_H
 #define SYMBOLIZE_H
 
-int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, lfnoise_handle, mfnoise_handle, dvoronoi_handle, add_handle, dbox_handle, line_handle;
-const int nsymbols = 12;
+int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, mfnoise_handle, dvoronoi_handle, add_handle, dbox_handle, line_handle;
+const int nsymbols = 13;
 const char *rand_source = "#version 130\n\n"
 "void rand(in vec2 x, out float n)\n"
 "{\n"
@@ -66,6 +66,14 @@ const char *normal_source = "const vec3 c = vec3(1.0, 0.0, -1.0);\n"
 "    scene(x+dx*c.yyx, na);\n"
 "    n.z = na.x;\n"
 "    n = normalize(n-s.x);\n"
+"}\n"
+"\0";
+const char *rot3_source = "const vec3 c = vec3(1.,0.,-1.);\n"
+"void rot3(in vec3 p, out mat3 rot)\n"
+"{\n"
+"    rot = mat3(c.xyyy, cos(p.x), sin(p.x), 0., -sin(p.x), cos(p.x))\n"
+"        *mat3(cos(p.y), 0., -sin(p.y), c.yxy, sin(p.y), 0., cos(p.y))\n"
+"        *mat3(cos(p.z), -sin(p.z), 0., sin(p.z), cos(p.z), c.yyyx);\n"
 "}\n"
 "\0";
 const char *lfnoise_source = "#version 130\n\n"
@@ -203,6 +211,7 @@ const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team
 "void smoothmin(in float a, in float b, in float k, out float dst);\n"
 "void dhexagonpattern(in vec2 p, out float d, out vec2 ind);\n"
 "void normal(in vec3 x, out vec3 n);\n"
+"void rot3(in vec3 p, out mat3 rot);\n"
 "\n"
 "float mat;\n"
 "void scene(in vec3 x, out vec2 d)\n"
@@ -292,7 +301,10 @@ const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team
 "        {\n"
 "            normal(x,n);\n"
 "            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(0.89,0.44,0.23),.5+.5*sin(x.z));\n"
-"            col = mix(col,vec3(0.25,0.23,0.21),step(.19,x.z));\n"
+"            col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));\n"
+"//             mat3 RR;\n"
+"//             rot3(.4*vec3(1.1,1.5,1.9)*iTime-.1*x.z, RR);\n"
+"//             col = abs(RR*col);\n"
 "        }\n"
 "    }\n"
 "    \n"
@@ -610,6 +622,19 @@ void Loadnormal()
 #endif
     progress += .2/(float)nsymbols;
 }
+void Loadrot3()
+{
+    int rot3_size = strlen(rot3_source);
+    rot3_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(rot3_handle, 1, (GLchar **)&rot3_source, &rot3_size);
+    glCompileShader(rot3_handle);
+#ifdef DEBUG
+    printf("---> rot3 Shader:\n");
+    debug(rot3_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
 void Loadlfnoise()
 {
     int lfnoise_size = strlen(lfnoise_source);
@@ -703,6 +728,8 @@ void LoadSymbols()
     updateBar();
     Loadnormal();
     updateBar();
+    Loadrot3();
+    updateBar();
     Loadlfnoise();
     updateBar();
     Loadmfnoise();
@@ -752,6 +779,7 @@ void Loaddecayingfactory()
     glAttachShader(decayingfactory_program,smoothmin_handle);
     glAttachShader(decayingfactory_program,dhexagonpattern_handle);
     glAttachShader(decayingfactory_program,normal_handle);
+    glAttachShader(decayingfactory_program,rot3_handle);
     glLinkProgram(decayingfactory_program);
 #ifdef DEBUG
     printf("---> decayingfactory Program:\n");
