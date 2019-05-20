@@ -212,18 +212,21 @@ const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team
 "void dhexagonpattern(in vec2 p, out float d, out vec2 ind);\n"
 "void normal(in vec3 x, out vec3 n);\n"
 "void rot3(in vec3 p, out mat3 rot);\n"
+"void lfnoise(in vec2 t, out float n);\n"
 "\n"
 "float mat;\n"
 "void scene(in vec3 x, out vec2 d)\n"
 "{\n"
 "    d = c.xx;\n"
 "    \n"
-"    x.z -= .5*iTime;\n"
+"    x.z -= 1.*iTime;\n"
 "    \n"
 "    float phi = atan(x.y, x.x),\n"
-"        dhex;\n"
+"        dhex,\n"
+"        na;\n"
 "    vec2 ind;\n"
-"    dhexagonpattern(2.*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);\n"
+"    rand(floor(.33*iTime)*c.xx, na);\n"
+"    dhexagonpattern(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);\n"
 "    rand(ind,mat);\n"
 "    stroke(dhex, .1, dhex);\n"
 "    mat *= (1.-iScale);\n"
@@ -780,6 +783,7 @@ void Loaddecayingfactory()
     glAttachShader(decayingfactory_program,dhexagonpattern_handle);
     glAttachShader(decayingfactory_program,normal_handle);
     glAttachShader(decayingfactory_program,rot3_handle);
+    glAttachShader(decayingfactory_program,lfnoise_handle);
     glLinkProgram(decayingfactory_program);
 #ifdef DEBUG
     printf("---> decayingfactory Program:\n");

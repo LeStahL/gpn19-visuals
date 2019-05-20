@@ -37,18 +37,21 @@ void smoothmin(in float a, in float b, in float k, out float dst);
 void dhexagonpattern(in vec2 p, out float d, out vec2 ind);
 void normal(in vec3 x, out vec3 n);
 void rot3(in vec3 p, out mat3 rot);
+void lfnoise(in vec2 t, out float n);
 
 float mat;
 void scene(in vec3 x, out vec2 d)
 {
     d = c.xx;
     
-    x.z -= .5*iTime;
+    x.z -= 1.*iTime;
     
     float phi = atan(x.y, x.x),
-        dhex;
+        dhex,
+        na;
     vec2 ind;
-    dhexagonpattern(2.*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);
+    rand(floor(.33*iTime)*c.xx, na);
+    dhexagonpattern(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);
     rand(ind,mat);
     stroke(dhex, .1, dhex);
     mat *= (1.-iScale);
