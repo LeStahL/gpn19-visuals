@@ -298,7 +298,7 @@ void draw()
             scale = 0.;
             for(int j=0; j<cutoff; ++j)
             {
-                printf("cutoff %d\n", j);
+//                 printf("cutoff %d\n", j);
                 scale += power_spectrum[j];
             }
             scale *= 2.e-5;
@@ -420,7 +420,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 case 0x39:
                     override_index = 9;
                     break;
-
+                case VK_UP:
+                    cutoff = max(cutoff + 1, NFFT);
+                    break;
+                case VK_DOWN:
+                    cutoff = min(cutoff-1,1);
+                    break;
             }
             break;
             
@@ -894,5 +899,4 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     }
     return msg.wParam;
 }
-
 
