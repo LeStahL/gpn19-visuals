@@ -186,7 +186,8 @@ unsigned int loading = 1,
     override_index = 1;
 
 // Music shader globals
-unsigned int paused = 0;
+unsigned int paused = 0,
+    scale_override = 0;
 float progress = .0;
 
 GLuint first_pass_framebuffer = 0, first_pass_texture;
@@ -274,40 +275,43 @@ void draw()
             }
             fftw_execute(p);
             
-            scale = 0.;
-            highscale = 0.;
-            float pmax = 0., pmin = 1.e9;
-            for(int j=0; j<NFFT; ++j)
+            if(!scale_override)
             {
-//                 printf("%le\n", in[i][0]);
-                power_spectrum[j] = out[j][0]*out[j][0]+out[j][1]*out[j][1];
-                pmax = max(pmax, power_spectrum[j]);
-                pmin = min(pmin, power_spectrum[j]);
-                //                         pm += power_spectrum[j];
-            }
-//             for(int j=0; j<NFFT; ++j)
-//             {
-//                 power_spectrum[j] -= pmin;
-//                 power_spectrum[j] = max(power_spectrum[j], 0.);
-//                 power_spectrum[j] = min(power_spectrum[j], 1.);
-//                 //power_spectrum[j] /= (pmax-pmin); 
-// //                 printf("%le\n", power_spectrum[j]);
-//             }
-            
-            cutoff = 64;
-            scale = 0.;
-            for(int j=0; j<cutoff; ++j)
-            {
-//                 printf("cutoff %d\n", j);
-                scale += power_spectrum[j];
-            }
-            scale *= 2.e-5;
-//             printf("%le ", scale);
-//             printf("%le ", power_spectrum[0]);
-//             printf("%d\n", cutoff);
-            for(int j=cutoff; j<NFFT; ++j)
-            {
-                highscale += power_spectrum[j];
+                scale = 0.;
+                highscale = 0.;
+                float pmax = 0., pmin = 1.e9;
+                for(int j=0; j<NFFT; ++j)
+                {
+    //                 printf("%le\n", in[i][0]);
+                    power_spectrum[j] = out[j][0]*out[j][0]+out[j][1]*out[j][1];
+                    pmax = max(pmax, power_spectrum[j]);
+                    pmin = min(pmin, power_spectrum[j]);
+                    //                         pm += power_spectrum[j];
+                }
+    //             for(int j=0; j<NFFT; ++j)
+    //             {
+    //                 power_spectrum[j] -= pmin;
+    //                 power_spectrum[j] = max(power_spectrum[j], 0.);
+    //                 power_spectrum[j] = min(power_spectrum[j], 1.);
+    //                 //power_spectrum[j] /= (pmax-pmin); 
+    // //                 printf("%le\n", power_spectrum[j]);
+    //             }
+                
+                cutoff = 64;
+                scale = 0.;
+                for(int j=0; j<cutoff; ++j)
+                {
+    //                 printf("cutoff %d\n", j);
+                    scale += power_spectrum[j];
+                }
+                scale *= 2.e-5;
+    //             printf("%le ", scale);
+    //             printf("%le ", power_spectrum[0]);
+    //             printf("%d\n", cutoff);
+                for(int j=cutoff; j<NFFT; ++j)
+                {
+                    highscale += power_spectrum[j];
+                }
             }
 //             printf("%le\n", scale);
             
@@ -426,12 +430,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 case VK_DOWN:
                     cutoff = min(cutoff-1,1);
                     break;
+                case VK_CONTROL:
+                    scale_override = 1;
+                    scale = .5;
+                    break;
             }
             break;
-            
+            case WM_KEYUP:
+                switch(wParam)
+                {
+                    case VK_CONTROL:
+                    //scale = 1.;
+                    scale_override = 0;
+                    break;
+                }
+                break;
         default:
             break;
-            
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
