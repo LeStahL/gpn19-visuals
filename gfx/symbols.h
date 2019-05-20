@@ -173,7 +173,12 @@ const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team
 "#version 130\n\n"
 "\n"
 "uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
 "uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -492,7 +497,8 @@ const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team
 "    float na;\n"
 "    lfnoise(iTime*c.xx, na);\n"
 "    vec3 gs = length(col)*c.xxx;\n"
-"    col = mix(col, gs, .5+.5*na);\n"
+"//     col = mix(col, gs, .5+.5*na);\n"
+"    col = mix(col, col*c.xxy, clamp(iScale,0.,1.));\n"
 "    \n"
 "    fragColor = vec4(col,1.0);\n"
 "}\n"
@@ -522,7 +528,12 @@ const char *fogforest_source = "/* Endeavor by Team210 - 64k intro by Team210 at
 "#version 130\n\n"
 "\n"
 "uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
 "uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -906,9 +917,19 @@ void LoadSymbols()
 }
 int decayingfactory_program, decayingfactory_handle, fogforest_program, fogforest_handle;
 int decayingfactory_iTime_location;
+decayingfactory_iFFTWidth_location;
+decayingfactory_iScale_location;
+decayingfactory_iHighScale_location;
+decayingfactory_iNBeats_location;
 decayingfactory_iResolution_location;
+decayingfactory_iFFT_location;
 int fogforest_iTime_location;
+fogforest_iFFTWidth_location;
+fogforest_iScale_location;
+fogforest_iHighScale_location;
+fogforest_iNBeats_location;
 fogforest_iResolution_location;
+fogforest_iFFT_location;
 const int nprograms = 2;
 
 void Loaddecayingfactory()
@@ -941,7 +962,12 @@ void Loaddecayingfactory()
 #endif
     glUseProgram(decayingfactory_program);
     decayingfactory_iTime_location = glGetUniformLocation(decayingfactory_program, "iTime");
+    decayingfactory_iFFTWidth_location = glGetUniformLocation(decayingfactory_program, "iFFTWidth");
+    decayingfactory_iScale_location = glGetUniformLocation(decayingfactory_program, "iScale");
+    decayingfactory_iHighScale_location = glGetUniformLocation(decayingfactory_program, "iHighScale");
+    decayingfactory_iNBeats_location = glGetUniformLocation(decayingfactory_program, "iNBeats");
     decayingfactory_iResolution_location = glGetUniformLocation(decayingfactory_program, "iResolution");
+    decayingfactory_iFFT_location = glGetUniformLocation(decayingfactory_program, "iFFT");
     progress += .2/(float)nprograms;
 }
 
@@ -977,7 +1003,12 @@ void Loadfogforest()
 #endif
     glUseProgram(fogforest_program);
     fogforest_iTime_location = glGetUniformLocation(fogforest_program, "iTime");
+    fogforest_iFFTWidth_location = glGetUniformLocation(fogforest_program, "iFFTWidth");
+    fogforest_iScale_location = glGetUniformLocation(fogforest_program, "iScale");
+    fogforest_iHighScale_location = glGetUniformLocation(fogforest_program, "iHighScale");
+    fogforest_iNBeats_location = glGetUniformLocation(fogforest_program, "iNBeats");
     fogforest_iResolution_location = glGetUniformLocation(fogforest_program, "iResolution");
+    fogforest_iFFT_location = glGetUniformLocation(fogforest_program, "iFFT");
     progress += .2/(float)nprograms;
 }
 

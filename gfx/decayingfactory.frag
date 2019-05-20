@@ -18,7 +18,12 @@
 #version 130
 
 uniform float iTime;
+uniform float iFFTWidth;
+uniform float iScale;
+uniform float iHighScale;
+uniform float iNBeats;
 uniform vec2 iResolution;
+uniform sampler1D iFFT;
 
 // Global constants
 const float pi = acos(-1.);
@@ -337,7 +342,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float na;
     lfnoise(iTime*c.xx, na);
     vec3 gs = length(col)*c.xxx;
-    col = mix(col, gs, .5+.5*na);
+//     col = mix(col, gs, .5+.5*na);
+    col = mix(col, col*c.xxy, clamp(iScale,0.,1.));
     
     fragColor = vec4(col,1.0);
 }

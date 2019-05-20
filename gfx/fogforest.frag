@@ -18,7 +18,12 @@
 #version 130
 
 uniform float iTime;
+uniform float iFFTWidth;
+uniform float iScale;
+uniform float iHighScale;
+uniform float iNBeats;
 uniform vec2 iResolution;
+uniform sampler1D iFFT;
 
 // Global constants
 const float pi = acos(-1.);

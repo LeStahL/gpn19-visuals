@@ -145,10 +145,15 @@ void debugp(int program)
 int w = 1014, h = 768;
 fftw_complex *in, *out;
 fftw_plan p;
-#define NFFT 1024
-float values[NFFT];
+#define NFFT 512
+float values[NFFT], power_spectrum[NFFT];
 WAVEHDR headers[2];
 HWAVEIN wi;
+double
+    // Scales
+    scale,
+    highscale,
+    nbeats;
 int
     // Loading bar
     load_handle,
@@ -159,7 +164,7 @@ int
 
     // Post processing
     post_handle,
-    post_program, 
+    post_program,
     post_resolution_location, 
     post_fsaa_location,
     post_channel0_location,
@@ -168,9 +173,11 @@ int
     fft_texture_handle,
     fft_texture_size,
     
+    cutoff = 32,
+    
     // Antialiasing
     fsaa = 25;
-int buffer_size = 256;
+int buffer_size = 64;
 int double_buffered = 0;
     
 // Demo globals
@@ -235,9 +242,8 @@ void updateBar()
     
     while ( PeekMessageA( &msg, NULL, 0, 0, PM_REMOVE ) ) 
     {
-        if ( msg.message == WM_QUIT ) {
+        if ( msg.message == WM_QUIT ) 
             return 0;
-        }
         TranslateMessage( &msg );
         DispatchMessageA( &msg );
     }
@@ -254,31 +260,68 @@ void draw()
     {
         if(headers[i].dwFlags & WHDR_DONE)
         {
-            // replace last block in values
+            // Replace last block in values
             for(int j=0; j<NFFT-buffer_size; ++j)
                 values[j] = values[j+buffer_size];
             for(int j=0; j<buffer_size; ++j)
                 values[NFFT-buffer_size+j] = ((float)(*(short *)(headers[i].lpData+2*j))/32767.);
-            //                         values[NFFT-buffer_size+j] = ((float*)headers[i].lpData)[j];
-            
-            // fourier transform values
+
+            // Fourier transform values
             for(int j=0; j<NFFT; ++j)
             {
-                //                         int low = max(0, j-10);
-                //                         int high = min(NFFT, j+10);
-                //                         in[j][0] = 0.;
-                //                         for(int k=low; k<high; ++k)
-                //                             in[j][0] += values[k] * (.54 - .46*cos(2.*acos(-1.)*(float)k/(float)NFFT));
-                in[j][0] = values[j] * (.54 - .46*cos(2.*acos(-1.)*(float)j/((float)NFFT-1.)));
+                in[j][0] = values[j];
                 in[j][1] = 0.;
-                in[NFFT+j][0] = 0.;
-                in[NFFT+j][1] = 0.;
-                in[2*NFFT+j][0] = 0.;
-                in[2*NFFT+j][1] = 0.;
-                in[3*NFFT+j][0] = 0.;
-                in[3*NFFT+j][1] = 0.;
             }
             fftw_execute(p);
+            
+            scale = 0.;
+            highscale = 0.;
+            float pmax = 0., pmin = 1.e9;
+            for(int j=0; j<NFFT; ++j)
+            {
+//                 printf("%le\n", in[i][0]);
+                power_spectrum[j] = out[j][0]*out[j][0]+out[j][1]*out[j][1];
+                pmax = max(pmax, power_spectrum[j]);
+                pmin = min(pmin, power_spectrum[j]);
+                //                         pm += power_spectrum[j];
+            }
+//             for(int j=0; j<NFFT; ++j)
+//             {
+//                 power_spectrum[j] -= pmin;
+//                 power_spectrum[j] = max(power_spectrum[j], 0.);
+//                 power_spectrum[j] = min(power_spectrum[j], 1.);
+//                 //power_spectrum[j] /= (pmax-pmin); 
+// //                 printf("%le\n", power_spectrum[j]);
+//             }
+            
+            cutoff = 64;
+            scale = 0.;
+            for(int j=0; j<cutoff; ++j)
+            {
+                printf("cutoff %d\n", j);
+                scale += power_spectrum[j];
+            }
+            scale *= 2.e-5;
+//             printf("%le ", scale);
+//             printf("%le ", power_spectrum[0]);
+//             printf("%d\n", cutoff);
+            for(int j=cutoff; j<NFFT; ++j)
+            {
+                highscale += power_spectrum[j];
+            }
+//             printf("%le\n", scale);
+            
+//             if((sign(scale-oldscale) != sign(oldscale - ooldscale)) && ((scale - ooldscale) < 0.))
+//             {
+//                 if(lastchange > 6.)
+//                 {
+//                     nbeats += 1.;
+//                     lastchange = 0;
+//                 }
+//                 else ++lastchange;
+//             }
+//             else
+//                 ++lastchange;
             
             headers[i].dwFlags = 0;
             headers[i].dwBytesRecorded = 0;
@@ -294,12 +337,18 @@ void draw()
         glUseProgram(decayingfactory_program);
         glUniform1f(decayingfactory_iTime_location, t);
         glUniform2f(decayingfactory_iResolution_location, w, h);
+        glUniform1f(decayingfactory_iScale_location, scale);
+        glUniform1f(decayingfactory_iNBeats_location, nbeats);
+        glUniform1f(decayingfactory_iHighScale_location, highscale);
     }
     else if(override_index == 2)
     {
         glUseProgram(fogforest_program);
         glUniform1f(fogforest_iTime_location, t);
         glUniform2f(fogforest_iResolution_location, w, h);
+        glUniform1f(fogforest_iScale_location, scale);
+        glUniform1f(fogforest_iNBeats_location, nbeats);
+        glUniform1f(fogforest_iHighScale_location, highscale);
     }
     
     quad();
@@ -810,9 +859,9 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     printf("WaveInStart: %d\n", result);
     
     //FFTW3 Setup
-    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT * 4);
-    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT * 4);
-    p = fftw_plan_dft_1d(NFFT * 4, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT);
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NFFT);
+    p = fftw_plan_dft_1d(NFFT, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
     
         // Initialize FFT texture
     fft_texture_size = (int)log2(NFFT)+1;
@@ -824,7 +873,6 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-    
     // Main loop
     t_start = (double)milliseconds_now()*1.e-3;
     while(1)
@@ -846,6 +894,5 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     }
     return msg.wParam;
 }
-
 
 
