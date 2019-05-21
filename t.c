@@ -173,7 +173,7 @@ int
     fft_texture_handle,
     fft_texture_size,
     
-    cutoff = 32,
+    cutoff = 96,
     
     // Antialiasing
     fsaa = 25;
@@ -297,7 +297,7 @@ void draw()
     // //                 printf("%le\n", power_spectrum[j]);
     //             }
                 
-                cutoff = 96;
+//                 cutoff = 96;
                 ssscale = sscale;
                 sscale = scale;
                 scale = 0.;
@@ -428,10 +428,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     override_index = 9;
                     break;
                 case VK_UP:
-                    cutoff = max(cutoff + 1, NFFT);
+                    cutoff = min((int)(1.1*cutoff),NFFT);
+                    printf("%d\n", cutoff);
                     break;
                 case VK_DOWN:
-                    cutoff = min(cutoff-1,1);
+                    cutoff = max((int)(.9*cutoff),12);
+//                     cutoff = min((int)ceil((double)cutoff*.9),16);
+                    printf("%d\n", cutoff);
                     break;
                 case VK_CONTROL:
                     scale_override = 1;
