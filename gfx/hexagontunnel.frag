@@ -114,9 +114,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         if(i<N)
         {
             normal(x,n);
-            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(0.89,0.44,0.23),.5+.5*sin(x.z));
-            col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));
-            
+                        
             float phi = atan(x.y, x.x),
                 dhex,
                 na,
@@ -125,6 +123,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             rand(floor(.33*iTime)*c.xx, na);
             rand(floor(.33*iTime)*c.xx+1., nal);
             na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
+            
+            mat3 RR;
+            rot3(na*1.e3*vec3(1.1,1.5,1.9),RR);
+
+            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),.5+.5*sin(x.z));
+            col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));
+
+            
             dhexagonpattern(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z-iTime),dhex,ind);
             stroke(dhex, .3, dhex);
             col = mix(col, clamp(1.9*col,c.yyy,c.xxx), mat*smoothstep(1.5/iResolution.y, -1.5/iResolution.y, -dhex));
