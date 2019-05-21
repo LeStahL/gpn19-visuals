@@ -64,23 +64,6 @@ void scene(in vec3 x, out vec2 d)
     stroke(d.x, .04, d.x);
 }
 
-// Texture
-void colorize(in vec2 x, out vec3 col)
-{    
-    float phi = .1*iTime;
-    
-    vec3 white = vec3(0.89,0.44,0.23),
-        gray =vec3(0.25,0.23,0.21);
-    float size = .1;
-    
-    
-    vec2 y = mod(x,size)-.5*size;
-    y = abs(y)-.001;
-    
-    float d = min(y.x,y.y);
-    col = mix(white, gray, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d*mat));
-}
-
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // Set up coordinates
@@ -133,16 +116,25 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             normal(x,n);
             col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(0.89,0.44,0.23),.5+.5*sin(x.z));
             col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));
-//             mat3 RR;
-//             rot3(.4*vec3(1.1,1.5,1.9)*iTime-.1*x.z, RR);
-//             col = abs(RR*col);
+            
+            float phi = atan(x.y, x.x),
+                dhex,
+                na,
+                nal;
+            vec2 ind;
+            rand(floor(.33*iTime)*c.xx, na);
+            rand(floor(.33*iTime)*c.xx+1., nal);
+            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
+            dhexagonpattern(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z-iTime),dhex,ind);
+            stroke(dhex, .3, dhex);
+            col = mix(col, clamp(1.9*col,c.yyy,c.xxx), mat*smoothstep(1.5/iResolution.y, -1.5/iResolution.y, -dhex));
         }
     }
     
     // Colorize
     col = .2*col
         + .9*col*abs(dot(l,n))
-        +.4*col*abs(pow(dot(reflect(-l,n),dir),3.));
+        +.7*col*abs(pow(dot(reflect(-l,n),dir),3.));
     
     fragColor = clamp(vec4(col,1.0),0.,1.);
 }
