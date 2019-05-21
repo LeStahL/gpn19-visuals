@@ -39,6 +39,7 @@ void smoothmin(in float a, in float b, in float k, out float dst);
 void dvoronoi(in vec2 x, out float d, out vec2 z);
 void dquadvoronoi(in vec2 x, in float threshold, in float depth, out float d, out float faco);
 void analytical_box(in vec3 o, in vec3 dir, in vec3 size, out float d);
+void rot3(in vec3 p, out mat3 rot);
 
 // Scene
 float mat;
@@ -46,16 +47,16 @@ void scene(in vec3 x, out vec2 d)
 {
     d = c.xx;
     float dbound;
-    dbox3(x,vec3(.33*c.xx, .2),dbound);
+    dbox3(x,vec3(.3*c.xx, .2),dbound);
     float da, fac;
-    dquadvoronoi(x.xy-.1*iTime, .71, 5., da, fac);
+    dquadvoronoi(x.xy-.1*iTime, .71, 4., da, fac);
     
     float p = pi/4.;
     vec2 cs = vec2(cos(p),sin(p));
     mat2 m = mat2(cs.x,cs.y,-cs.y,cs.x);
     vec2 y = m*x.xy;
     float da9, fac9;
-    dquadvoronoi(y-12.-.1*iTime, .41,4., da9, fac9);
+    dquadvoronoi(y-12.-.1*iTime, .41,2., da9, fac9);
     smoothmin(da,da9,.01,da);
     
     float r;
@@ -64,9 +65,9 @@ void scene(in vec3 x, out vec2 d)
     zextrude(x.z,da,r*.3,da9);
     smoothmin(d.x,da9,.4, d.x);
     
-    stroke(da, .015, da);
+    stroke(da, .015+6.*.045*clamp(iScale,0.,1.), da);
     float db;
-    stroke(da, .011, db);
+    stroke(da, .011+6.*.033*clamp(iScale,0.,1.), db);
    
     stroke(d.x,.003,d.x);
     dbox3(x,vec3(.33*c.xx, .02),da);
@@ -117,6 +118,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         return;
     }
     
+    float dhex,
+                na,
+                nal;
+            vec2 ind;
+            rand(floor(.33*iTime)*c.xx, na);
+            rand(floor(.33*iTime)*c.xx+1., nal);
+            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
+    uv = mix(uv,.5*uv.yx,na);
+    
     // Camera setup
     float pp = .3*iTime;
     vec3 o = c.yyx+.2*c.yzy,
@@ -135,7 +145,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         i;
     
     // Graph
-    analytical_box(o,dir,vec3(.4*c.xx,.2),d);
+    analytical_box(o,dir,vec3(.3*c.xx,.2),d);
     x = o + d * dir;
     
     // Actual Scene
@@ -148,7 +158,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             x = o + d * dir;
             scene(x,s);
             if(s.x < 1.e-4) break;
-            d += min(.0008,s.x);
+            d += min(.008,s.x);
         }
 
         // Illumination
@@ -156,8 +166,20 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         if(i<N)
         {
             normal(x,n);
-            col = mix(mix(.0,.3,clamp(x.z/.3,0.,1.))*(.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(.7,.5,.26),step(x.z,.08));
-            col = mix(col,(1.+.8*mat)*vec3(.6,.12,.06),step(.19,x.z));
+            
+            
+            
+            mat3 RR;
+            rot3(na*1.e3*vec3(1.1,1.5,1.9),RR);
+            col = mix(mix(.0,.3,clamp(x.z/.3,0.,1.))*(.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*RR*vec3(.7,.5,.26)),step(x.z,.08));
+            col = mix(col,(1.+.8*mat)*abs(RR*vec3(.6,.12,.06)),step(.19,x.z));
+
+            col = mix((.5+.5*mat)*col,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),(.5+.5*sin(x.z))*step(.19,x.z));
+            col = mix(col,vec3(0.25,0.23,0.21),(.5+.5*cos(4.*x.z+mat))*step(.19,x.z));
+            
+            //dvoronoi(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z-iTime),dhex,ind);
+            //stroke(dhex, .3, dhex);
+            col = mix(col, clamp(1.9*col,c.yyy,c.xxx), mat*step(.19,x.z));
         }
         else
         {

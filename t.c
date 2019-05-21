@@ -297,7 +297,7 @@ void draw()
     // //                 printf("%le\n", power_spectrum[j]);
     //             }
                 
-                cutoff = 64;
+                cutoff = 96;
                 scale = 0.;
                 for(int j=0; j<cutoff; ++j)
                 {
