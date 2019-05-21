@@ -347,12 +347,12 @@ void draw()
     }
     else if(override_index == 2)
     {
-        glUseProgram(fogforest_program);
-        glUniform1f(fogforest_iTime_location, t);
-        glUniform2f(fogforest_iResolution_location, w, h);
-        glUniform1f(fogforest_iScale_location, scale);
-        glUniform1f(fogforest_iNBeats_location, nbeats);
-        glUniform1f(fogforest_iHighScale_location, highscale);
+        glUseProgram(voronoinet_program);
+        glUniform1f(voronoinet_iTime_location, t);
+        glUniform2f(voronoinet_iResolution_location, w, h);
+        glUniform1f(voronoinet_iScale_location, scale);
+        glUniform1f(voronoinet_iNBeats_location, nbeats);
+        glUniform1f(voronoinet_iHighScale_location, highscale);
     }
     
     quad();

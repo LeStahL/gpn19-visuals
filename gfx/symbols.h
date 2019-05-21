@@ -2,7 +2,7 @@
 #ifndef SYMBOLIZE_H
 #define SYMBOLIZE_H
 
-int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, mfnoise_handle, dvoronoi_handle, add_handle, dbox_handle, line_handle;
+int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle;
 const int nsymbols = 13;
 const char *rand_source = "#version 130\n\n"
 "void rand(in vec2 x, out float n)\n"
@@ -93,21 +93,20 @@ const char *lfnoise_source = "#version 130\n\n"
 "    n = mix(v1.x, v1.y, t.x);\n"
 "}\n"
 "\0";
-const char *mfnoise_source = "#version 130\n\n"
-"// const vec3 c = vec3(1.,0.,-1.);\n"
-"void lfnoise(in vec2 x, out float d);\n"
-"void mfnoise(in vec2 x, in float d, in float b, in float e, out float n)\n"
+const char *dbox_source = "#version 130\n\n"
+"const vec3 c = vec3(1.,0.,-1.);\n"
+"void dbox(in vec2 x, in vec2 b, out float d)\n"
 "{\n"
-"    n = 0.;\n"
-"    float a = 1., nf = 0., buf;\n"
-"    for(float f = d; f<b; f *= 2.)\n"
-"    {\n"
-"        lfnoise(f*x, buf);\n"
-"        n += a*buf;\n"
-"        a *= e;\n"
-"        nf += 1.;\n"
-"    }\n"
-"    n *= (1.-e)/(1.-pow(e, nf));\n"
+"    vec2 da = abs(x)-b;\n"
+"    d = length(max(da,c.yy)) + min(max(da.x,da.y),0.0);\n"
+"}\n"
+"\0";
+const char *dbox3_source = "#version 130\n\n"
+"void dbox3(in vec3 x, in vec3 b, out float d)\n"
+"{\n"
+"  vec3 da = abs(x) - b;\n"
+"  d = length(max(da,0.0))\n"
+"         + min(max(da.x,max(da.y,da.z)),0.0);\n"
 "}\n"
 "\0";
 const char *dvoronoi_source = "#version 130\n\n"
@@ -153,24 +152,57 @@ const char *dvoronoi_source = "#version 130\n\n"
 "    z = pf;\n"
 "}\n"
 "\0";
-const char *add_source = "void add(in vec2 sda, in vec2 sdb, out vec2 sdf)\n"
+const char *dquadvoronoi_source = "#version 130\n\n"
+"// Random Quadtree\n"
+"void smoothmin(in float a, in float b, in float k, out float dst);\n"
+"void dvoronoi(in vec2 x, out float d, out vec2 z);\n"
+"void rand(in vec2 x, out float num);\n"
+"void dquadvoronoi(in vec2 x, in float threshold, in float depth, out float d, out float faco)\n"
 "{\n"
-"    sdf = mix(sda, sdb, step(sdb.x, sda.x));\n"
+"    d = 1.;\n"
+"    vec2 y = x, \n"
+"        yi;\n"
+"    float size = .5,\n"
+"	    fac = 1.;\n"
+"    faco = 1.;\n"
+"    for(float i=0.; i<depth; i+=1.)\n"
+"    {\n"
+"        float dd;\n"
+"            vec2 ind;\n"
+"            dvoronoi(y/size/.5,dd, ind);\n"
+"        vec2 y0 = y;\n"
+"		float r;\n"
+"        rand(ind+fac,r);\n"
+"        fac *= r*step(r,threshold);\n"
+"        faco *= r;\n"
+"        if(fac != 0.)\n"
+"        {\n"
+"            \n"
+"            //dd = mix(dd,length(y)-.5*size,step(r,threshold));\n"
+"            dd = abs(dd);\n"
+"            smoothmin(d,dd,.01,d);\n"
+"        }\n"
+"        \n"
+"        size *= .5;\n"
+"    }\n"
+"    faco += fac*fac;\n"
 "}\n"
 "\0";
-const char *dbox_source = "#version 130\n\n"
+const char *analytical_box_source = "#version 130\n\n"
 "const vec3 c = vec3(1.,0.,-1.);\n"
-"void dbox(in vec2 x, in vec2 b, out float d)\n"
+"void analytical_box(in vec3 o, in vec3 dir, in vec3 size, out float d)\n"
 "{\n"
-"    vec2 da = abs(x)-b;\n"
-"    d = length(max(da,c.yy)) + min(max(da.x,da.y),0.0);\n"
-"}\n"
-"\0";
-const char *line_source = "// Distance to line segment\n"
-"void line(in vec3 x, in vec3 p1, in vec3 p2, out float dst)\n"
-"{\n"
-"    vec3 d = p2-p1;\n"
-"    dst = length(x-mix(p1, p2, clamp(dot(x-p1, d)/dot(d,d),0.,1.)));\n"
+"    vec3 tlo = min((size-o)/dir,(-size-o)/dir); // Select 3 visible planes\n"
+"    vec2 abxlo = abs(o.yz + tlo.x*dir.yz),\n"
+"        abylo = abs(o.xz + tlo.y*dir.xz),\n"
+"        abzlo = abs(o.xy + tlo.z*dir.xy);\n"
+"    vec4 dn = 100.*c.xyyy;\n"
+"    \n"
+"    dn = mix(dn, vec4(tlo.x,c.xyy), float(all(lessThan(abxlo,size.yz)))*step(tlo.x,dn.x));\n"
+"    dn = mix(dn, vec4(tlo.y,c.yxy), float(all(lessThan(abylo,size.xz)))*step(tlo.y,dn.x));\n"
+"    dn = mix(dn, vec4(tlo.z,c.yyx), float(all(lessThan(abzlo,size.xy)))*step(tlo.z,dn.x));\n"
+"\n"
+"    d = dn.r;\n"
 "}\n"
 "\0";
 const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
@@ -325,8 +357,8 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
 "}\n"
 "\0";
-const char *fogforest_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
-" * Copyright (C) 2018  Alexander Kraus <nr4@z10.info>\n"
+const char *voronoinet_source = "/* Corfield Imitation 1\n"
+" * Copyright (C) 2019  Alexander Kraus <nr4@z10.info>\n"
 " * \n"
 " * This program is free software: you can redistribute it and/or modify\n"
 " * it under the terms of the GNU General Public License as published by\n"
@@ -357,104 +389,52 @@ const char *fogforest_source = "/* Endeavor by Team210 - 64k intro by Team210 at
 "const vec3 c = vec3(1.0, 0.0, -1.0);\n"
 "float a = 1.0;\n"
 "\n"
-"// Hash function\n"
 "void rand(in vec2 x, out float num);\n"
-"void lfnoise(in vec2 t, out float n);\n"
-"void mfnoise(in vec2 x, in float d, in float b, in float e, out float n);\n"
-"void dvoronoi(in vec2 x, out float d, out vec2 z);\n"
-"void smoothmin(in float a, in float b, in float k, out float dst);\n"
-"void add(in vec2 sda, in vec2 sdb, out vec2 sdf);\n"
 "void zextrude(in float z, in float d2d, in float h, out float d);\n"
+"void stroke(in float d0, in float s, out float d);\n"
 "void dbox(in vec2 p, in vec2 b, out float dst);\n"
-"void line(in vec3 x, in vec3 p1, in vec3 p2, out float dst);\n"
-"void stroke(in float d, in float s, out float dst);\n"
-"\n"
-"// Hash function\n"
-"void rand3(in vec3 x, out float num)\n"
-"{\n"
-"    num = fract(sin(dot(sign(x)*abs(x) ,vec3(12.9898,78.233,45.1232)))*43758.5453);\n"
-"}\n"
-"\n"
-"// Arbitrary-frequency 2D noise\n"
-"void lfnoise3(in vec3 t, out float num)\n"
-"{\n"
-"    vec3 i = floor(t);\n"
-"    t = fract(t);\n"
-"    //t = ((6.*t-15.)*t+10.)*t*t*t;  // TODO: add this for slower perlin noise\n"
-"    t = smoothstep(c.yyy, c.xxx, t); // TODO: add this for faster value noise\n"
-"    vec2 v1, v2, v3, v4;\n"
-"    rand3(i, v1.x);\n"
-"    rand3(i+c.xyy, v1.y);\n"
-"    rand3(i+c.yxy, v2.x);\n"
-"    rand3(i+c.xxy, v2.y);\n"
-"    rand3(i+c.yyx, v3.x);\n"
-"    rand3(i+c.xyx, v3.y);\n"
-"    rand3(i+c.yxx, v4.x);\n"
-"    rand3(i+c.xxx, v4.y);\n"
-"    v1 = c.zz+2.*mix(v1, v2, t.y);\n"
-"    v3 = c.zz+2.*mix(v3, v4, t.y);\n"
-"    v2.x = -1.+2.*mix(v1.x, v1.y, t.x);\n"
-"    v2.y = -1.+2.*mix(v3.x, v3.y, t.x);\n"
-"    num = mix(v2.x, v2.y, t.z);\n"
-"}\n"
-"\n"
-"// Make noise multi-frequency\n"
-"void mfnoise3(in vec3 x, in float fmin, in float fmax, in float alpha, out float dst)\n"
-"{\n"
-"    dst = 0.;\n"
-"    float a = 1., nf = 0.;\n"
-"    for(float f = fmin; f<fmax; f = f*2.)\n"
-"    {\n"
-"        float buf;\n"
-"        lfnoise3(f*x, buf);\n"
-"        dst += a*buf;\n"
-"        a *= alpha;\n"
-"        nf += 1.;\n"
-"    }\n"
-"    dst *= (1.-alpha)/(1.-pow(alpha, nf));\n"
-"}\n"
+"void dbox3(in vec3 x, in vec3 b, out float d);\n"
+"void smoothmin(in float a, in float b, in float k, out float dst);\n"
+"void dvoronoi(in vec2 x, out float d, out vec2 z);\n"
+"void dquadvoronoi(in vec2 x, in float threshold, in float depth, out float d, out float faco);\n"
+"void analytical_box(in vec3 o, in vec3 dir, in vec3 size, out float d);\n"
 "\n"
 "// Scene\n"
+"float mat;\n"
 "void scene(in vec3 x, out vec2 d)\n"
 "{\n"
-"    x.y += .1*iTime;\n"
-"    float n;\n"
+"    d = c.xx;\n"
+"    float dbound;\n"
+"    dbox3(x,vec3(.33*c.xx, .2),dbound);\n"
+"    float da, fac;\n"
+"    dquadvoronoi(x.xy-.1*iTime, .71, 5., da, fac);\n"
 "    \n"
-"    // Floor\n"
-"    mfnoise(x.xy, 4.,4.e2,.35, n);\n"
-"    d = vec2(x.z-.05*n,1.);\n"
+"    float p = pi/4.;\n"
+"    vec2 cs = vec2(cos(p),sin(p));\n"
+"    mat2 m = mat2(cs.x,cs.y,-cs.y,cs.x);\n"
+"    vec2 y = m*x.xy;\n"
+"    float da9, fac9;\n"
+"    dquadvoronoi(y-12.-.1*iTime, .41,4., da9, fac9);\n"
+"    smoothmin(da,da9,.01,da);\n"
 "    \n"
-"    // Trees\n"
-"    float v, da;\n"
-"    vec2 vi;\n"
-"    dvoronoi(x.xy, v, vi);\n"
-"    vec2 r;\n"
-"    rand(vi, r.x);\n"
-"    rand(vi+1301., r.y);\n"
-"    vec2 y = x.xy-vi, \n"
-"        n2;\n"
-"    lfnoise(3.*x.z*c.xx-r,n2.x);\n"
-"    lfnoise(4.*x.z*c.xx+33.1*r, n2.y);\n"
-"    da = length(y-.01*n2)-.07*mix(1.,.7,smoothstep(0., 1.,clamp(x.z*3.,0.,1.)));\n"
-"    //zextrude(x.z,-da,10.,da);\n"
-"    //add(d, vec2(da,2.), d);\n"
+"    float r;\n"
+"    rand(202.*fac*fac9*c.xx+3., r);\n"
+"    mat = r;\n"
+"    zextrude(x.z,da,r*.3,da9);\n"
+"    smoothmin(d.x,da9,.4, d.x);\n"
+"    \n"
+"    stroke(da, .015, da);\n"
+"    float db;\n"
+"    stroke(da, .011, db);\n"
+"   \n"
+"    stroke(d.x,.003,d.x);\n"
+"    dbox3(x,vec3(.33*c.xx, .02),da);\n"
 "    smoothmin(d.x,da,.2,d.x);\n"
-"    d.y = mix(1.,2.,step(.1*n,x.z));\n"
+"    smoothmin(d.x,db,.05,d.x);\n"
+"    //d.x = min(d.x, da);\n"
+"    //d.x = min(d.x, db);\n"
 "    \n"
-"    // smaller branches\n"
-"    float z = mod(x.z,.05)-.025, zi = (x.z-z)/.05;\n"
-"    vec2 rp;//= vec2(0;\n"
-"    rand(zi*c.xx+r,rp.x);\n"
-"    rand(zi*c.xx+r+1332.,rp.y);\n"
-"    rp *= vec2(1.,2.*pi);\n"
-"\n"
-"    float nz;\n"
-"    lfnoise(5.*length(y-.01*n2)*c.xx-33.*zi, nz);\n"
-"    \n"
-"\n"
-"    line(vec3(y-.01*n2, z+.01*nz), c.yyy, vec3(rp.x*vec2(cos(rp.y),sin(rp.y)),.05*rp.x), da);\n"
-"    stroke(da, mix(1.,.1,smoothstep(0.,1.,clamp(length(vec3(y-.01*n2, z))/.7,0.,1.)))*.01*(.3+rp.x+n2.x), da);\n"
-"    smoothmin(d.x,da,.05,d.x);\n"
+"    d.x = max(d.x, dbound);\n"
 "}\n"
 "\n"
 "// Normal\n"
@@ -463,11 +443,24 @@ const char *fogforest_source = "/* Endeavor by Team210 - 64k intro by Team210 at
 "\n"
 "// Texture\n"
 "void colorize(in vec2 x, out vec3 col)\n"
-"{\n"
-"  x.y += .1*iTime;\n"
-"  float n;\n"
-"    mfnoise(x.xy, 4.e0,4.e2,.65, n);\n"
-"  col = mix(vec3(0.55,0.69,0.37), vec3(0.00,0.02,0.04), .9+.1*n);\n"
+"{    \n"
+"    float phi = .1*iTime;\n"
+"    \n"
+"    vec3 white = .4*vec3(0.99,0.29,0.09),\n"
+"        gray = vec3(0.95,0.25,0.05);\n"
+"    float size = .1;\n"
+"    \n"
+"    \n"
+"    vec2 y = mod(x,size)-.5*size;\n"
+"    y = abs(y)-.001;\n"
+"    float d = min(y.x,y.y);\n"
+"\n"
+"    y = mod(x,.2*size)-.1*size;\n"
+"    y = abs(y)-.0002;\n"
+"    d = min(d, min(y.x,y.y));\n"
+"    \n"
+"    col = mix(white, gray, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d));\n"
+"	col = mix(col, length(col)/length(c.xxx)*c.xxx, .7);\n"
 "}\n"
 "\n"
 "void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
@@ -476,69 +469,77 @@ const char *fogforest_source = "/* Endeavor by Team210 - 64k intro by Team210 at
 "    a = iResolution.x/iResolution.y;\n"
 "    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
 "    vec3 col = c.yyy;\n"
-" \n"
+"    \n"
 "    if(length(uv) > .5)\n"
 "    {\n"
 "        fragColor = vec4(col, 0.);\n"
 "        return;\n"
 "    }\n"
-" \n"
+"    \n"
 "    // Camera setup\n"
 "    float pp = .3*iTime;\n"
-"    vec3 o = c.yzy+.2*c.yyx, \n"
-"        t = c.yyy+.3*c.yyx,\n"
+"    vec3 o = c.yyx+.2*c.yzy,\n"
+"        t = c.yyy,\n"
 "        dir = normalize(t-o),\n"
 "        r = normalize(c.xyy),\n"
 "        u = normalize(cross(r,dir)),\n"
 "        n,\n"
-"        x;\n"
+"        x,\n"
+"        l;\n"
 "    t += uv.x*r + uv.y*u;\n"
 "    dir = normalize(t-o);\n"
 "    vec2 s;\n"
-"    float d = 0.;//-(o.z-.05)/dir.z;\n"
-"    int N = 350,\n"
+"    float d = 0.;// -(o.z-.12)/dir.z;\n"
+"    int N = 250,\n"
 "        i;\n"
 "    \n"
-"    // Raymarching\n"
-"    for(i=0; i<N; ++i)\n"
-"    {\n"
-"        x = o + d * dir;\n"
-"        scene(x,s);\n"
-"        if(s.x < 1.e-4*max(d*d,1.)) break;\n"
-"        if(d>10.)break;\n"
-"        d += min(.01*max(d,1.),s.x);\n"
-"    }\n"
+"    // Graph\n"
+"    analytical_box(o,dir,vec3(.4*c.xx,.2),d);\n"
+"    x = o + d * dir;\n"
 "    \n"
-"    // Illumination\n"
-"    vec3 l = normalize(x+c.yxx);\n"
-"    if(i<N)\n"
+"    // Actual Scene\n"
+"    if(x.z>0.)\n"
 "    {\n"
-"	    normal(x,n);\n"
-"        //colorize(x.xy, col);\n"
-"    }\n"
 "\n"
+"        // Raymarching\n"
+"        for(i=0; i<N; ++i)\n"
+"        {\n"
+"            x = o + d * dir;\n"
+"            scene(x,s);\n"
+"            if(s.x < 1.e-4) break;\n"
+"            d += min(.0008,s.x);\n"
+"        }\n"
+"\n"
+"        // Illumination\n"
+"        l = normalize(x+c.yxx);\n"
+"        if(i<N)\n"
+"        {\n"
+"            normal(x,n);\n"
+"            col = mix(mix(.0,.3,clamp(x.z/.3,0.,1.))*(.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(.7,.5,.26),step(x.z,.08));\n"
+"            col = mix(col,(1.+.8*mat)*vec3(.6,.12,.06),step(.19,x.z));\n"
+"        }\n"
+"        else\n"
+"        {\n"
+"            d = -o.z/dir.z;\n"
+"            x = o + d * dir;\n"
+"            n = c.yyx;\n"
+"            l = vec3(x.xy, .8);\n"
+"            colorize(x.xy, col);\n"
+"        }\n"
+"    }\n"
+"    else // Floor with grid\n"
+"    {\n"
+"        d = -o.z/dir.z;\n"
+"        x = o + d * dir;\n"
+"        n = c.yyx;\n"
+"        l = vec3(x.xy, .8);\n"
+"        colorize(x.xy, col);\n"
+"    }\n"
 "    \n"
-"    if(s.y == 2.)//Treess\n"
-"    {\n"
-"      \n"
-"    col = .2*vec3(0.05,0.12,0.12)\n"
-"        + .2*vec3(0.05,0.12,0.12)*abs(dot(l,n))\n"
-"        + .6*vec3(0.04,0.13,0.12)*abs(pow(dot(reflect(-l,n),dir),3.));\n"
-"    }\n"
-"    if(s.y == 1.)\n"
-"    {\n"
-"        colorize(x.xy,col);\n"
-"            .5*col\n"
-"            + .2*col*abs(dot(l,n))\n"
-"            +.6*col*abs(pow(dot(reflect(-l,n),dir),3.));\n"
-"    }\n"
-"    vec3 c1 =  mix(vec3(0.91,0.87,0.68),vec3(0.07,0.21,0.21),clamp(length(uv),0.,1.));\n"
-"    float noiz;\n"
-"    mfnoise3(x,1.,100.,.65,noiz);\n"
-"    noiz = .5+.5*noiz;\n"
-"    //noiz *= smoothstep(.3,.5,clamp(x.z,0.,1.));\n"
-"    c1 = mix(c1, vec3(0.29,0.60,0.47), noiz);\n"
-"    col = mix(col, c1, clamp(d/10.,0.,1.));\n"
+"    // Colorize\n"
+"    col = .2*col\n"
+"        + .9*col*abs(dot(l,n))\n"
+"        +.4*col*abs(pow(dot(reflect(-l,n),dir),3.));\n"
 "    \n"
 "    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
 "}\n"
@@ -652,15 +653,28 @@ void Loadlfnoise()
 #endif
     progress += .2/(float)nsymbols;
 }
-void Loadmfnoise()
+void Loaddbox()
 {
-    int mfnoise_size = strlen(mfnoise_source);
-    mfnoise_handle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(mfnoise_handle, 1, (GLchar **)&mfnoise_source, &mfnoise_size);
-    glCompileShader(mfnoise_handle);
+    int dbox_size = strlen(dbox_source);
+    dbox_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dbox_handle, 1, (GLchar **)&dbox_source, &dbox_size);
+    glCompileShader(dbox_handle);
 #ifdef DEBUG
-    printf("---> mfnoise Shader:\n");
-    debug(mfnoise_handle);
+    printf("---> dbox Shader:\n");
+    debug(dbox_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
+void Loaddbox3()
+{
+    int dbox3_size = strlen(dbox3_source);
+    dbox3_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dbox3_handle, 1, (GLchar **)&dbox3_source, &dbox3_size);
+    glCompileShader(dbox3_handle);
+#ifdef DEBUG
+    printf("---> dbox3 Shader:\n");
+    debug(dbox3_handle);
     printf(">>>>\n");
 #endif
     progress += .2/(float)nsymbols;
@@ -678,41 +692,28 @@ void Loaddvoronoi()
 #endif
     progress += .2/(float)nsymbols;
 }
-void Loadadd()
+void Loaddquadvoronoi()
 {
-    int add_size = strlen(add_source);
-    add_handle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(add_handle, 1, (GLchar **)&add_source, &add_size);
-    glCompileShader(add_handle);
+    int dquadvoronoi_size = strlen(dquadvoronoi_source);
+    dquadvoronoi_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dquadvoronoi_handle, 1, (GLchar **)&dquadvoronoi_source, &dquadvoronoi_size);
+    glCompileShader(dquadvoronoi_handle);
 #ifdef DEBUG
-    printf("---> add Shader:\n");
-    debug(add_handle);
+    printf("---> dquadvoronoi Shader:\n");
+    debug(dquadvoronoi_handle);
     printf(">>>>\n");
 #endif
     progress += .2/(float)nsymbols;
 }
-void Loaddbox()
+void Loadanalytical_box()
 {
-    int dbox_size = strlen(dbox_source);
-    dbox_handle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(dbox_handle, 1, (GLchar **)&dbox_source, &dbox_size);
-    glCompileShader(dbox_handle);
+    int analytical_box_size = strlen(analytical_box_source);
+    analytical_box_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(analytical_box_handle, 1, (GLchar **)&analytical_box_source, &analytical_box_size);
+    glCompileShader(analytical_box_handle);
 #ifdef DEBUG
-    printf("---> dbox Shader:\n");
-    debug(dbox_handle);
-    printf(">>>>\n");
-#endif
-    progress += .2/(float)nsymbols;
-}
-void Loadline()
-{
-    int line_size = strlen(line_source);
-    line_handle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(line_handle, 1, (GLchar **)&line_source, &line_size);
-    glCompileShader(line_handle);
-#ifdef DEBUG
-    printf("---> line Shader:\n");
-    debug(line_handle);
+    printf("---> analytical_box Shader:\n");
+    debug(analytical_box_handle);
     printf(">>>>\n");
 #endif
     progress += .2/(float)nsymbols;
@@ -736,18 +737,18 @@ void LoadSymbols()
     updateBar();
     Loadlfnoise();
     updateBar();
-    Loadmfnoise();
+    Loaddbox();
+    updateBar();
+    Loaddbox3();
     updateBar();
     Loaddvoronoi();
     updateBar();
-    Loadadd();
+    Loaddquadvoronoi();
     updateBar();
-    Loaddbox();
-    updateBar();
-    Loadline();
+    Loadanalytical_box();
     updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, fogforest_program, fogforest_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -755,13 +756,13 @@ hexagontunnel_iHighScale_location;
 hexagontunnel_iNBeats_location;
 hexagontunnel_iResolution_location;
 hexagontunnel_iFFT_location;
-int fogforest_iTime_location;
-fogforest_iFFTWidth_location;
-fogforest_iScale_location;
-fogforest_iHighScale_location;
-fogforest_iNBeats_location;
-fogforest_iResolution_location;
-fogforest_iFFT_location;
+int voronoinet_iTime_location;
+voronoinet_iFFTWidth_location;
+voronoinet_iScale_location;
+voronoinet_iHighScale_location;
+voronoinet_iNBeats_location;
+voronoinet_iResolution_location;
+voronoinet_iFFT_location;
 const int nprograms = 2;
 
 void Loadhexagontunnel()
@@ -802,44 +803,43 @@ void Loadhexagontunnel()
     progress += .2/(float)nprograms;
 }
 
-void Loadfogforest()
+void Loadvoronoinet()
 {
-    int fogforest_size = strlen(fogforest_source);
-    fogforest_handle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fogforest_handle, 1, (GLchar **)&fogforest_source, &fogforest_size);
-    glCompileShader(fogforest_handle);
+    int voronoinet_size = strlen(voronoinet_source);
+    voronoinet_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(voronoinet_handle, 1, (GLchar **)&voronoinet_source, &voronoinet_size);
+    glCompileShader(voronoinet_handle);
 #ifdef DEBUG
-    printf("---> fogforest Shader:\n");
-    debug(fogforest_handle);
+    printf("---> voronoinet Shader:\n");
+    debug(voronoinet_handle);
     printf(">>>>\n");
 #endif
-    fogforest_program = glCreateProgram();
-    glAttachShader(fogforest_program,fogforest_handle);
-    glAttachShader(fogforest_program,rand_handle);
-    glAttachShader(fogforest_program,lfnoise_handle);
-    glAttachShader(fogforest_program,mfnoise_handle);
-    glAttachShader(fogforest_program,dvoronoi_handle);
-    glAttachShader(fogforest_program,smoothmin_handle);
-    glAttachShader(fogforest_program,add_handle);
-    glAttachShader(fogforest_program,zextrude_handle);
-    glAttachShader(fogforest_program,dbox_handle);
-    glAttachShader(fogforest_program,line_handle);
-    glAttachShader(fogforest_program,stroke_handle);
-    glAttachShader(fogforest_program,normal_handle);
-    glLinkProgram(fogforest_program);
+    voronoinet_program = glCreateProgram();
+    glAttachShader(voronoinet_program,voronoinet_handle);
+    glAttachShader(voronoinet_program,rand_handle);
+    glAttachShader(voronoinet_program,zextrude_handle);
+    glAttachShader(voronoinet_program,stroke_handle);
+    glAttachShader(voronoinet_program,dbox_handle);
+    glAttachShader(voronoinet_program,dbox3_handle);
+    glAttachShader(voronoinet_program,smoothmin_handle);
+    glAttachShader(voronoinet_program,dvoronoi_handle);
+    glAttachShader(voronoinet_program,dquadvoronoi_handle);
+    glAttachShader(voronoinet_program,analytical_box_handle);
+    glAttachShader(voronoinet_program,normal_handle);
+    glLinkProgram(voronoinet_program);
 #ifdef DEBUG
-    printf("---> fogforest Program:\n");
-    debugp(fogforest_program);
+    printf("---> voronoinet Program:\n");
+    debugp(voronoinet_program);
     printf(">>>>\n");
 #endif
-    glUseProgram(fogforest_program);
-    fogforest_iTime_location = glGetUniformLocation(fogforest_program, "iTime");
-    fogforest_iFFTWidth_location = glGetUniformLocation(fogforest_program, "iFFTWidth");
-    fogforest_iScale_location = glGetUniformLocation(fogforest_program, "iScale");
-    fogforest_iHighScale_location = glGetUniformLocation(fogforest_program, "iHighScale");
-    fogforest_iNBeats_location = glGetUniformLocation(fogforest_program, "iNBeats");
-    fogforest_iResolution_location = glGetUniformLocation(fogforest_program, "iResolution");
-    fogforest_iFFT_location = glGetUniformLocation(fogforest_program, "iFFT");
+    glUseProgram(voronoinet_program);
+    voronoinet_iTime_location = glGetUniformLocation(voronoinet_program, "iTime");
+    voronoinet_iFFTWidth_location = glGetUniformLocation(voronoinet_program, "iFFTWidth");
+    voronoinet_iScale_location = glGetUniformLocation(voronoinet_program, "iScale");
+    voronoinet_iHighScale_location = glGetUniformLocation(voronoinet_program, "iHighScale");
+    voronoinet_iNBeats_location = glGetUniformLocation(voronoinet_program, "iNBeats");
+    voronoinet_iResolution_location = glGetUniformLocation(voronoinet_program, "iResolution");
+    voronoinet_iFFT_location = glGetUniformLocation(voronoinet_program, "iFFT");
     progress += .2/(float)nprograms;
 }
 
@@ -847,7 +847,7 @@ void LoadPrograms()
 {
     Loadhexagontunnel();
     updateBar();
-    Loadfogforest();
+    Loadvoronoinet();
     updateBar();
 }
 #endif
