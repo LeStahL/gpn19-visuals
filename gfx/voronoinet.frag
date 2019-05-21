@@ -167,8 +167,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         {
             normal(x,n);
             
-            
-            
             mat3 RR;
             rot3(na*1.e3*vec3(1.1,1.5,1.9),RR);
             col = mix(mix(.0,.3,clamp(x.z/.3,0.,1.))*(.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*RR*vec3(.7,.5,.26)),step(x.z,.08));
@@ -177,8 +175,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             col = mix((.5+.5*mat)*col,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),(.5+.5*sin(x.z))*step(.19,x.z));
             col = mix(col,vec3(0.25,0.23,0.21),(.5+.5*cos(4.*x.z+mat))*step(.19,x.z));
             
-            //dvoronoi(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z-iTime),dhex,ind);
-            //stroke(dhex, .3, dhex);
             col = mix(col, clamp(1.9*col,c.yyy,c.xxx), mat*step(.19,x.z));
         }
         else

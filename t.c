@@ -151,7 +151,7 @@ WAVEHDR headers[2];
 HWAVEIN wi;
 double
     // Scales
-    scale,
+    scale,sscale,ssscale,
     highscale,
     nbeats;
 int
@@ -298,6 +298,8 @@ void draw()
     //             }
                 
                 cutoff = 96;
+                ssscale = sscale;
+                sscale = scale;
                 scale = 0.;
                 for(int j=0; j<cutoff; ++j)
                 {
@@ -305,6 +307,7 @@ void draw()
                     scale += power_spectrum[j];
                 }
                 scale *= 2.e-5;
+//                 scale = .33*(scale + sscale + ssscale);
     //             printf("%le ", scale);
     //             printf("%le ", power_spectrum[0]);
     //             printf("%d\n", cutoff);
