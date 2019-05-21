@@ -338,12 +338,12 @@ void draw()
     
     if(override_index == 1)
     {
-        glUseProgram(decayingfactory_program);
-        glUniform1f(decayingfactory_iTime_location, t);
-        glUniform2f(decayingfactory_iResolution_location, w, h);
-        glUniform1f(decayingfactory_iScale_location, scale);
-        glUniform1f(decayingfactory_iNBeats_location, nbeats);
-        glUniform1f(decayingfactory_iHighScale_location, highscale);
+        glUseProgram(hexagontunnel_program);
+        glUniform1f(hexagontunnel_iTime_location, t);
+        glUniform2f(hexagontunnel_iResolution_location, w, h);
+        glUniform1f(hexagontunnel_iScale_location, scale);
+        glUniform1f(hexagontunnel_iNBeats_location, nbeats);
+        glUniform1f(hexagontunnel_iHighScale_location, highscale);
     }
     else if(override_index == 2)
     {

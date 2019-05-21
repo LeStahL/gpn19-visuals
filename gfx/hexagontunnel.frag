@@ -48,9 +48,12 @@ void scene(in vec3 x, out vec2 d)
     
     float phi = atan(x.y, x.x),
         dhex,
-        na;
+        na,
+        nal;
     vec2 ind;
     rand(floor(.33*iTime)*c.xx, na);
+    rand(floor(.33*iTime)*c.xx+1., nal);
+    na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
     dhexagonpattern(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);
     rand(ind,mat);
     stroke(dhex, .1, dhex);

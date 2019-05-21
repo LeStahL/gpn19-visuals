@@ -173,7 +173,7 @@ const char *line_source = "// Distance to line segment\n"
 "    dst = length(x-mix(p1, p2, clamp(dot(x-p1, d)/dot(d,d),0.,1.)));\n"
 "}\n"
 "\0";
-const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
+const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
 "* Copyright (C) 2018  Alexander Kraus <nr4@z10.info>\n"
 "*\n"
 "* This program is free software: you can redistribute it and/or modify\n"
@@ -223,9 +223,12 @@ const char *decayingfactory_source = "/* Endeavor by Team210 - 64k intro by Team
 "    \n"
 "    float phi = atan(x.y, x.x),\n"
 "        dhex,\n"
-"        na;\n"
+"        na,\n"
+"        nal;\n"
 "    vec2 ind;\n"
 "    rand(floor(.33*iTime)*c.xx, na);\n"
+"    rand(floor(.33*iTime)*c.xx+1., nal);\n"
+"    na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
 "    dhexagonpattern(mix(1.,4.,na)*1.01*vec2(pi,3.)*vec2(phi,x.z),dhex,ind);\n"
 "    rand(ind,mat);\n"
 "    stroke(dhex, .1, dhex);\n"
@@ -746,14 +749,14 @@ void LoadSymbols()
     Loadline();
     updateBar();
 }
-int decayingfactory_program, decayingfactory_handle, fogforest_program, fogforest_handle;
-int decayingfactory_iTime_location;
-decayingfactory_iFFTWidth_location;
-decayingfactory_iScale_location;
-decayingfactory_iHighScale_location;
-decayingfactory_iNBeats_location;
-decayingfactory_iResolution_location;
-decayingfactory_iFFT_location;
+int hexagontunnel_program, hexagontunnel_handle, fogforest_program, fogforest_handle;
+int hexagontunnel_iTime_location;
+hexagontunnel_iFFTWidth_location;
+hexagontunnel_iScale_location;
+hexagontunnel_iHighScale_location;
+hexagontunnel_iNBeats_location;
+hexagontunnel_iResolution_location;
+hexagontunnel_iFFT_location;
 int fogforest_iTime_location;
 fogforest_iFFTWidth_location;
 fogforest_iScale_location;
@@ -763,41 +766,41 @@ fogforest_iResolution_location;
 fogforest_iFFT_location;
 const int nprograms = 2;
 
-void Loaddecayingfactory()
+void Loadhexagontunnel()
 {
-    int decayingfactory_size = strlen(decayingfactory_source);
-    decayingfactory_handle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(decayingfactory_handle, 1, (GLchar **)&decayingfactory_source, &decayingfactory_size);
-    glCompileShader(decayingfactory_handle);
+    int hexagontunnel_size = strlen(hexagontunnel_source);
+    hexagontunnel_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(hexagontunnel_handle, 1, (GLchar **)&hexagontunnel_source, &hexagontunnel_size);
+    glCompileShader(hexagontunnel_handle);
 #ifdef DEBUG
-    printf("---> decayingfactory Shader:\n");
-    debug(decayingfactory_handle);
+    printf("---> hexagontunnel Shader:\n");
+    debug(hexagontunnel_handle);
     printf(">>>>\n");
 #endif
-    decayingfactory_program = glCreateProgram();
-    glAttachShader(decayingfactory_program,decayingfactory_handle);
-    glAttachShader(decayingfactory_program,rand_handle);
-    glAttachShader(decayingfactory_program,zextrude_handle);
-    glAttachShader(decayingfactory_program,stroke_handle);
-    glAttachShader(decayingfactory_program,smoothmin_handle);
-    glAttachShader(decayingfactory_program,dhexagonpattern_handle);
-    glAttachShader(decayingfactory_program,normal_handle);
-    glAttachShader(decayingfactory_program,rot3_handle);
-    glAttachShader(decayingfactory_program,lfnoise_handle);
-    glLinkProgram(decayingfactory_program);
+    hexagontunnel_program = glCreateProgram();
+    glAttachShader(hexagontunnel_program,hexagontunnel_handle);
+    glAttachShader(hexagontunnel_program,rand_handle);
+    glAttachShader(hexagontunnel_program,zextrude_handle);
+    glAttachShader(hexagontunnel_program,stroke_handle);
+    glAttachShader(hexagontunnel_program,smoothmin_handle);
+    glAttachShader(hexagontunnel_program,dhexagonpattern_handle);
+    glAttachShader(hexagontunnel_program,normal_handle);
+    glAttachShader(hexagontunnel_program,rot3_handle);
+    glAttachShader(hexagontunnel_program,lfnoise_handle);
+    glLinkProgram(hexagontunnel_program);
 #ifdef DEBUG
-    printf("---> decayingfactory Program:\n");
-    debugp(decayingfactory_program);
+    printf("---> hexagontunnel Program:\n");
+    debugp(hexagontunnel_program);
     printf(">>>>\n");
 #endif
-    glUseProgram(decayingfactory_program);
-    decayingfactory_iTime_location = glGetUniformLocation(decayingfactory_program, "iTime");
-    decayingfactory_iFFTWidth_location = glGetUniformLocation(decayingfactory_program, "iFFTWidth");
-    decayingfactory_iScale_location = glGetUniformLocation(decayingfactory_program, "iScale");
-    decayingfactory_iHighScale_location = glGetUniformLocation(decayingfactory_program, "iHighScale");
-    decayingfactory_iNBeats_location = glGetUniformLocation(decayingfactory_program, "iNBeats");
-    decayingfactory_iResolution_location = glGetUniformLocation(decayingfactory_program, "iResolution");
-    decayingfactory_iFFT_location = glGetUniformLocation(decayingfactory_program, "iFFT");
+    glUseProgram(hexagontunnel_program);
+    hexagontunnel_iTime_location = glGetUniformLocation(hexagontunnel_program, "iTime");
+    hexagontunnel_iFFTWidth_location = glGetUniformLocation(hexagontunnel_program, "iFFTWidth");
+    hexagontunnel_iScale_location = glGetUniformLocation(hexagontunnel_program, "iScale");
+    hexagontunnel_iHighScale_location = glGetUniformLocation(hexagontunnel_program, "iHighScale");
+    hexagontunnel_iNBeats_location = glGetUniformLocation(hexagontunnel_program, "iNBeats");
+    hexagontunnel_iResolution_location = glGetUniformLocation(hexagontunnel_program, "iResolution");
+    hexagontunnel_iFFT_location = glGetUniformLocation(hexagontunnel_program, "iFFT");
     progress += .2/(float)nprograms;
 }
 
@@ -844,7 +847,7 @@ void Loadfogforest()
 
 void LoadPrograms()
 {
-    Loaddecayingfactory();
+    Loadhexagontunnel();
     updateBar();
     Loadfogforest();
     updateBar();
