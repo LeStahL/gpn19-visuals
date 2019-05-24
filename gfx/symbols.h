@@ -2,8 +2,8 @@
 #ifndef SYMBOLIZE_H
 #define SYMBOLIZE_H
 
-int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle;
-const int nsymbols = 13;
+int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle;
+const int nsymbols = 16;
 const char *rand_source = "#version 130\n\n"
 "void rand(in vec2 x, out float n)\n"
 "{\n"
@@ -203,6 +203,50 @@ const char *analytical_box_source = "#version 130\n\n"
 "    dn = mix(dn, vec4(tlo.z,c.yyx), float(all(lessThan(abzlo,size.xy)))*step(tlo.z,dn.x));\n"
 "\n"
 "    d = dn.r;\n"
+"}\n"
+"\0";
+const char *mfnoise_source = "#version 130\n\n"
+"// const vec3 c = vec3(1.,0.,-1.);\n"
+"void lfnoise(in vec2 x, out float d);\n"
+"void mfnoise(in vec2 x, in float d, in float b, in float e, out float n)\n"
+"{\n"
+"    n = 0.;\n"
+"    float a = 1., nf = 0., buf;\n"
+"    for(float f = d; f<b; f *= 2.)\n"
+"    {\n"
+"        lfnoise(f*x, buf);\n"
+"        n += a*buf;\n"
+"        a *= e;\n"
+"        nf += 1.;\n"
+"    }\n"
+"    n *= (1.-e)/(1.-pow(e, nf));\n"
+"}\n"
+"\0";
+const char *dpolygon_source = "#version 130\n\n"
+"// compute distance to regular polygon\n"
+"const float pi = acos(-1.);\n"
+"void dpolygon(in vec2 x, in float N, in float R, out float dst)\n"
+"{\n"
+"    float d = 2.*pi/N,\n"
+"        t = mod(acos(x.x/length(x)), d)-.5*d;\n"
+"    dst = R-length(x)*cos(t)/cos(.5*d);\n"
+"}\n"
+"\0";
+const char *dstar_source = "#version 130\n\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.,0.,-1.);\n"
+"void dstar(in vec2 x, in float N, in vec2 R, out float dst)\n"
+"{\n"
+"    float d = pi/N,\n"
+"        p0 = acos(x.x/length(x)),\n"
+"        p = mod(p0, d),\n"
+"        i = mod(round((p-p0)/d),2.);\n"
+"    x = length(x)*vec2(cos(p),sin(p));\n"
+"    vec2 a = mix(R,R.yx,i),\n"
+"    	p1 = a.x*c.xy,\n"
+"        ff = a.y*vec2(cos(d),sin(d))-p1;\n"
+"   	ff = ff.yx*c.zx;\n"
+"    dst = dot(x-p1,ff)/length(ff);\n"
 "}\n"
 "\0";
 const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
@@ -567,6 +611,163 @@ const char *voronoinet_source = "/* Corfield Imitation 1\n"
 "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
 "}\n"
 "\0";
+const char *startunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
+"* Copyright (C) 2018  Alexander Kraus <nr4@z10.info>\n"
+"*\n"
+"* This program is free software: you can redistribute it and/or modify\n"
+"* it under the terms of the GNU General Public License as published by\n"
+"* the Free Software Foundation, either version 3 of the License, or\n"
+"* (at your option) any later version.\n"
+"*\n"
+"* This program is distributed in the hope that it will be useful,\n"
+"* but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"* GNU General Public License for more details.\n"
+"*\n"
+"* You should have received a copy of the GNU General Public License\n"
+"* along with this program.  If not, see <https://www.gnu.org/licenses/>.\n"
+"*/\n"
+"\n"
+"#version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"void rand(in vec2 x, out float num);\n"
+"void lfnoise(in vec2 t, out float num);\n"
+"void mfnoise(in vec2 x, in float fmin, in float fmax, in float alpha, out float num);\n"
+"void dbox(in vec2 p, in vec2 b, out float dst);\n"
+"void dpolygon(in vec2 x, in float N, in float R, out float dst);\n"
+"void dstar(in vec2 x, in float N, in vec2 R, out float dst);\n"
+"void rot3(in vec3 p, out mat3 rot);\n"
+"void stroke(in float d0, in float s, out float d);\n"
+"\n"
+"// Mix appropriate marble colors.\n"
+"void color(in float scale, out vec3 col)\n"
+"{\n"
+"    const int N = 13;\n"
+"    const vec3 colors[N] = vec3[N](\n"
+"        c.yyy,\n"
+"        vec3(0.15,0.14,0.12),\n"
+"        vec3(0.38,0.16,0.16),\n"
+"        vec3(0.42,0.20,0.19),\n"
+"        vec3(0.60,0.14,0.16),\n"
+"        vec3(0.70,0.11,0.15),\n"
+"        vec3(0.89,0.11,0.10),\n"
+"        vec3(0.89,0.27,0.03),\n"
+"        vec3(0.92,0.39,0.14),\n"
+"        vec3(0.91,0.47,0.15),\n"
+"        vec3(0.92,0.57,0.14),\n"
+"        vec3(0.90,0.63,0.12),\n"
+"        vec3(0.92,0.72,0.14)\n"
+"    );\n"
+"	float index = floor(scale*float(N)), \n"
+"        remainder = scale*float(N)-index;\n"
+"    col = mix(colors[int(index)],colors[int(index)+1], remainder);\n"
+"}\n"
+"\n"
+"void colorize(in vec2 uv, out vec3 col, float i)\n"
+"{\n"
+"    vec2 n, n2;\n"
+"    lfnoise(i*c.xx-2.*iTime, n.x);\n"
+"    lfnoise(i*c.xx-2.*iTime-1337., n.y);\n"
+"    \n"
+"    uv += i*.5*n;\n"
+"    \n"
+"    float ca = .5*i-3.5*iTime,\n"
+"        cc = cos(ca),\n"
+"        sc = sin(ca);\n"
+"    mat2 RR = mat2(cc,sc,-sc,cc);\n"
+"    uv = RR*uv;\n"
+"    \n"
+"    vec3 c1;\n"
+"    color(clamp(i+2.*n.y,0.,1.), c1);\n"
+"    \n"
+"    float d, da, db;\n"
+"    dpolygon(uv, 7., .4+.4*iScale, d);\n"
+"    dstar(uv,7.,vec2(.05,.5)+vec2(.1,.4)*iScale,db);\n"
+"    d = mix(d,db,.5+.5*n.y);\n"
+"    stroke(d, .01, da);\n"
+"    da -= .01*n.y;\n"
+"    d -= .01*n.x;\n"
+"\n"
+"        float mat = n.y;\n"
+"//     rand(i*c.xx, mat);\n"
+"        float phi = atan(uv.y, uv.x),\n"
+"                dhex,\n"
+"                na,\n"
+"                nal;\n"
+"            vec2 ind;\n"
+"            rand(floor(.33*iTime)*c.xx, na);\n"
+"            rand(floor(.33*iTime)*c.xx+1., nal);\n"
+"            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
+"            \n"
+"            mat3 RRR;\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9),RRR);\n"
+"\n"
+"            c1 = mix((.5+.5*n.y)*c1,(1.+.8*mat)*abs(RRR*c1),.5+.5*n.x);\n"
+"            c1 = mix(c1,.2*c1,.5+.5*n.y);\n"
+"\n"
+"    \n"
+"    col = mix(c1,c.yyy,smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-da));\n"
+"    col = mix(col, mix(col,c1,.03+.02*clamp(iScale,0.,1.)), smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-d));\n"
+"//     col = mix(col, mix(col,1.4*c1,.03+.02*clamp(iScale,0.,1.)), smoothstep(1.5/iResolution.y, -1.5/iResolution.y,abs(d)-.05));\n"
+"    col = mix(col,1.5*col,smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-abs(da)+.005));\n"
+"    \n"
+"    col = clamp(col*1.3, 0.,1.);\n"
+"}\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    /// Set up coordinates\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
+"    vec3 col = c.yyy;\n"
+"    \n"
+"    if(length(uv) > .5)\n"
+"    {\n"
+"        fragColor = vec4(col, 0.);\n"
+"        return;\n"
+"    }\n"
+"    \n"
+"    vec3 x,\n"
+"        o = c.yyx,\n"
+"        t = vec3(uv,0.),\n"
+"        dir = normalize(t-o),\n"
+"        c1;\n"
+"    float d = .5;\n"
+"    vec2 n;\n"
+"    int N = 100,\n"
+"        i;\n"
+"    \n"
+"    for(i=0; i<N; ++i)\n"
+"    {\n"
+"        d = -(o.z-.5+.1*float(i))/dir.z;\n"
+"        x = o + d * dir;\n"
+"           \n"
+"        colorize(x.xy,c1, float(i)*mix(.01,.05,iScale));\n"
+"        col += c1;\n"
+"    }\n"
+"    c1 /= float(N);\n"
+"    \n"
+"    fragColor = vec4(col,1.0);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
 void Loadrand()
 {
     int rand_size = strlen(rand_source);
@@ -736,6 +937,45 @@ void Loadanalytical_box()
 #endif
     progress += .2/(float)nsymbols;
 }
+void Loadmfnoise()
+{
+    int mfnoise_size = strlen(mfnoise_source);
+    mfnoise_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(mfnoise_handle, 1, (GLchar **)&mfnoise_source, &mfnoise_size);
+    glCompileShader(mfnoise_handle);
+#ifdef DEBUG
+    printf("---> mfnoise Shader:\n");
+    debug(mfnoise_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
+void Loaddpolygon()
+{
+    int dpolygon_size = strlen(dpolygon_source);
+    dpolygon_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dpolygon_handle, 1, (GLchar **)&dpolygon_source, &dpolygon_size);
+    glCompileShader(dpolygon_handle);
+#ifdef DEBUG
+    printf("---> dpolygon Shader:\n");
+    debug(dpolygon_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
+void Loaddstar()
+{
+    int dstar_size = strlen(dstar_source);
+    dstar_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dstar_handle, 1, (GLchar **)&dstar_source, &dstar_size);
+    glCompileShader(dstar_handle);
+#ifdef DEBUG
+    printf("---> dstar Shader:\n");
+    debug(dstar_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
 
 void LoadSymbols()
 {
@@ -765,8 +1005,14 @@ void LoadSymbols()
     updateBar();
     Loadanalytical_box();
     updateBar();
+    Loadmfnoise();
+    updateBar();
+    Loaddpolygon();
+    updateBar();
+    Loaddstar();
+    updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -781,7 +1027,14 @@ voronoinet_iHighScale_location;
 voronoinet_iNBeats_location;
 voronoinet_iResolution_location;
 voronoinet_iFFT_location;
-const int nprograms = 2;
+int startunnel_iTime_location;
+startunnel_iFFTWidth_location;
+startunnel_iScale_location;
+startunnel_iHighScale_location;
+startunnel_iNBeats_location;
+startunnel_iResolution_location;
+startunnel_iFFT_location;
+const int nprograms = 3;
 
 void Loadhexagontunnel()
 {
@@ -862,11 +1115,51 @@ void Loadvoronoinet()
     progress += .2/(float)nprograms;
 }
 
+void Loadstartunnel()
+{
+    int startunnel_size = strlen(startunnel_source);
+    startunnel_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(startunnel_handle, 1, (GLchar **)&startunnel_source, &startunnel_size);
+    glCompileShader(startunnel_handle);
+#ifdef DEBUG
+    printf("---> startunnel Shader:\n");
+    debug(startunnel_handle);
+    printf(">>>>\n");
+#endif
+    startunnel_program = glCreateProgram();
+    glAttachShader(startunnel_program,startunnel_handle);
+    glAttachShader(startunnel_program,rand_handle);
+    glAttachShader(startunnel_program,lfnoise_handle);
+    glAttachShader(startunnel_program,mfnoise_handle);
+    glAttachShader(startunnel_program,dbox_handle);
+    glAttachShader(startunnel_program,dpolygon_handle);
+    glAttachShader(startunnel_program,dstar_handle);
+    glAttachShader(startunnel_program,rot3_handle);
+    glAttachShader(startunnel_program,stroke_handle);
+    glLinkProgram(startunnel_program);
+#ifdef DEBUG
+    printf("---> startunnel Program:\n");
+    debugp(startunnel_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(startunnel_program);
+    startunnel_iTime_location = glGetUniformLocation(startunnel_program, "iTime");
+    startunnel_iFFTWidth_location = glGetUniformLocation(startunnel_program, "iFFTWidth");
+    startunnel_iScale_location = glGetUniformLocation(startunnel_program, "iScale");
+    startunnel_iHighScale_location = glGetUniformLocation(startunnel_program, "iHighScale");
+    startunnel_iNBeats_location = glGetUniformLocation(startunnel_program, "iNBeats");
+    startunnel_iResolution_location = glGetUniformLocation(startunnel_program, "iResolution");
+    startunnel_iFFT_location = glGetUniformLocation(startunnel_program, "iFFT");
+    progress += .2/(float)nprograms;
+}
+
 void LoadPrograms()
 {
     Loadhexagontunnel();
     updateBar();
     Loadvoronoinet();
+    updateBar();
+    Loadstartunnel();
     updateBar();
 }
 #endif

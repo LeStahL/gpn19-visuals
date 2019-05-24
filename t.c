@@ -357,6 +357,15 @@ void draw()
         glUniform1f(voronoinet_iNBeats_location, nbeats);
         glUniform1f(voronoinet_iHighScale_location, highscale);
     }
+    else if(override_index == 3)
+    {
+        glUseProgram(startunnel_program);
+        glUniform1f(startunnel_iTime_location, t);
+        glUniform2f(startunnel_iResolution_location, w, h);
+        glUniform1f(startunnel_iScale_location, scale);
+        glUniform1f(startunnel_iNBeats_location, nbeats);
+        glUniform1f(startunnel_iHighScale_location, highscale);
+    }
     
     quad();
     
@@ -429,12 +438,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     break;
                 case VK_UP:
                     cutoff = min((int)(1.1*cutoff),NFFT);
-                    printf("%d\n", cutoff);
                     break;
                 case VK_DOWN:
                     cutoff = max((int)(.9*cutoff),12);
-//                     cutoff = min((int)ceil((double)cutoff*.9),16);
-                    printf("%d\n", cutoff);
                     break;
                 case VK_CONTROL:
                     scale_override = 1;
@@ -446,7 +452,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 switch(wParam)
                 {
                     case VK_CONTROL:
-                    //scale = 1.;
                     scale_override = 0;
                     break;
                 }
