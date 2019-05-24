@@ -77,12 +77,15 @@ void colorize(in vec2 uv, out vec3 col, float i)
     mat2 RR = mat2(cc,sc,-sc,cc);
     uv = RR*uv;
     
+    float dd;
+    rand(floor(.33*iTime)*c.xx,dd);
+    
     vec3 c1;
     color(clamp(i+2.*n.y,0.,1.), c1);
     
     float d, da, db;
-    dpolygon(uv, 7., .4+.4*iScale, d);
-    dstar(uv,7.,vec2(.05,.5)+vec2(.1,.4)*iScale,db);
+    dpolygon(uv, max(ceil(8.*dd),3.), .4+0.*.4*iScale, d);
+    dstar(uv,max(ceil(8.*dd),3.),vec2(.05,.5)+0.*vec2(.1,.4)*iScale,db);
     d = mix(d,db,.5+.5*n.y);
     stroke(d, .01, da);
     da -= .01*n.y;
@@ -109,7 +112,7 @@ void colorize(in vec2 uv, out vec3 col, float i)
     col = mix(c1,c.yyy,smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-da));
     col = mix(col, mix(col,c1,.03+.02*clamp(iScale,0.,1.)), smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-d));
 //     col = mix(col, mix(col,1.4*c1,.03+.02*clamp(iScale,0.,1.)), smoothstep(1.5/iResolution.y, -1.5/iResolution.y,abs(d)-.05));
-    col = mix(col,1.5*col,smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-abs(da)+.005));
+    col = mix(col,(.5+iScale)*col,smoothstep(1.5/iResolution.y, -1.5/iResolution.y,-abs(da)+.005));
     
     col = clamp(col*1.3, 0.,1.);
 }
