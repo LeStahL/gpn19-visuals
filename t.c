@@ -409,9 +409,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_KEYDOWN:
             switch(wParam)
             {
-                case VK_ESCAPE:
-                    ExitProcess(0);
-                    break;
+//                 case VK_ESCAPE:
+//                     ExitProcess(0);
+//                     break;
                 case VK_SPACE:
                     // pause/unpaused render timer
                     if(!paused)
