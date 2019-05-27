@@ -26,6 +26,7 @@ uniform int iEffect;
 out vec4 gl_FragColor;
 
 const vec3 c = vec3(1.,0.,-1.);
+const float pi = acos(-1.);
 
 void rand(in vec2 x, out float n)
 {
@@ -54,6 +55,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     
     float delta;
     vec2 n;
+    
+    // Chromatic distortion
     if(iEffect == 1) 
     {
         delta = .02;
@@ -62,6 +65,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     }
     else delta = .0;
     
+    // HF noise
     if(iEffect == 2)
     {
         lfnoise(12.*fragCoord-iTime, n.x);
@@ -69,11 +73,24 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         fragCoord += 20.*n;
     }
     
+    // LF noise
     else if(iEffect == 3)
     {
         lfnoise(22.*fragCoord/iResolution-3.*iTime, n.x);
         lfnoise(22.*fragCoord/iResolution-3.*iTime-1337., n.y);
         fragCoord += 22.*n;
+    }
+    
+    // Kaleidoscope
+    else if(iEffect == 4)
+    {
+        float a = iResolution.x/iResolution.y;
+        vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
+        rand(floor(.33*iTime)*c.xx, n.x);
+        n.x = max(floor(12.*n.x),3.);
+        float phi = abs(mod(atan(uv.y, uv.x),pi/n.x)-.5*pi/n.x);
+        uv = length(uv)*vec2(cos(phi), sin(phi));
+        fragCoord = (uv + .5*vec2(a,1.))*iResolution.yy;
     }
     
    	for(float i = -.5*bound; i<=.5*bound; i+=1.)

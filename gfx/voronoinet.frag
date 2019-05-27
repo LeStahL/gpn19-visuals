@@ -76,7 +76,7 @@ void scene(in vec3 x, out vec2 d)
     //d.x = min(d.x, da);
     //d.x = min(d.x, db);
     
-    d.x = max(d.x, dbound);
+//     d.x = max(d.x, dbound);
 }
 
 // Normal
@@ -140,12 +140,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     t += uv.x*r + uv.y*u;
     dir = normalize(t-o);
     vec2 s;
-    float d = 0.;// -(o.z-.12)/dir.z;
+    float d = -(o.z-.2)/dir.z;
     int N = 250,
         i;
     
     // Graph
-    analytical_box(o,dir,vec3(.3*c.xx,.2),d);
+    //analytical_box(o,dir,vec3(.3*c.xx,.2),d);
     x = o + d * dir;
     
     // Actual Scene
