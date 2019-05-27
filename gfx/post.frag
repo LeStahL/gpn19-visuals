@@ -69,6 +69,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         fragCoord += 20.*n;
     }
     
+    else if(iEffect == 3)
+    {
+        lfnoise(22.*fragCoord/iResolution-3.*iTime, n.x);
+        lfnoise(22.*fragCoord/iResolution-3.*iTime-1337., n.y);
+        fragCoord += 22.*n;
+    }
+    
    	for(float i = -.5*bound; i<=.5*bound; i+=1.)
         for(float j=-.5*bound; j<=.5*bound; j+=1.)
         {
