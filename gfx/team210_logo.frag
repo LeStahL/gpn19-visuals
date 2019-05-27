@@ -39,7 +39,7 @@ void mfnoise(in vec2 x, in float fmin, in float fmax, in float alpha, out float 
 void camerasetup(in vec2 uv, out vec3 ro, out vec3 dir)
 {
     vec3 right = c.xyy, up = c.yxy, target = c.yyy;
-    ro = c.yyx+.3*vec3(cos(iTime), sin(iTime), 0.)*(1.-smoothstep(11., 13., iTime));
+    ro = c.yyx+.3*vec3(cos(iTime), sin(iTime), 0.);
     dir = normalize(target + uv.x * right + uv.y * up - ro);
 }
 
@@ -107,7 +107,7 @@ void texteffect(in vec3 x, out vec2 sdf)
         lfnoise(24.0*cind.xy-iTime, noise);
         zextrude(x.z,
                  1.5*x.z-inner_logo, 
-                 .5*(0.5+0.5*noise)*blend*(.5+.5*iScale),
+                 .5*(0.5+0.5*noise)*blend*(.1+.9*clamp(iScale,0.,1.)),
                  sdf.x);
         stroke(sdf.x, 0.05*blend, sdf.x);
         sdf.y = 7.0;
@@ -153,13 +153,14 @@ void calcnormal(in vec3 x, in float eps, out vec3 n)
 }
 
 // Initial intro
+vec2 ind;
 void background2(in vec2 uv, out vec3 col)
 {
     col = c.yyy;
     
     // hexagonal grid
     float d, d0;
-    vec2 ind;
+//     vec2 ind;
     dhexagonpattern(48.0*uv, d0, ind);
     d = -d0;
     stroke(d, 0.1, d);
@@ -211,7 +212,7 @@ void background2(in vec2 uv, out vec3 col)
     rot3(na*1.e3*vec3(1.1,1.5,1.9),RRR);
 
     orange = mix((.5+.5*n.y)*orange,(1.+.8*mat)*abs(RRR*orange),.5+.5*n.x);
-    orange = mix(orange,.2*orange,.5+.5*n.y);
+    orange = mix(orange,.2*RRR*orange,.5+.5*n.y);
   
     col = orange;
     col = mix(col, gray, step(0.,inner_logo));
@@ -219,6 +220,7 @@ void background2(in vec2 uv, out vec3 col)
     col = mix(col, mix(gray,orange,step(abs(d0)-.4,0.)), step(-abs(d0)+.2,0.));
     col = mix(col, 4.*orange, step(logo_border,0.));
     
+    col = 2.*col;
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -261,8 +263,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         col = mix(col, .5*col, clamp(x.z/.2,0.,1.));
     }
     else
-        background2((ro-ro.z/dir.z*dir).xy, col);
-
+    {
+        float ra;
+        rand(ind, ra);
+        background2((ro-(ro.z/dir.z-.5*ra)*dir).xy, col);
+    }
     col = clamp(col, 0., 1.);
     fragColor = vec4(col,1.0);
 }

@@ -167,6 +167,8 @@ int
     post_program,
     post_resolution_location, 
     post_fsaa_location,
+    post_time_location,
+    post_effect_location,
     post_channel0_location,
     
     // FFT stuff
@@ -174,6 +176,7 @@ int
     fft_texture_size,
     
     cutoff = 96,
+    effect = 0,
     
     // Antialiasing
     fsaa = 25;
@@ -387,6 +390,8 @@ void draw()
     glUniform2f(post_resolution_location, w, h);
     glUniform1f(post_fsaa_location, fsaa);
     glUniform1i(post_channel0_location, 0);
+    glUniform1f(post_time_location, t);
+    glUniform1i(post_effect_location, effect);
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, first_pass_texture);
@@ -454,6 +459,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 case VK_CONTROL:
                     scale_override = 1;
                     scale = .5;
+                    break;
+                case VK_F1:
+                    effect = 0;
+                    break;
+                case VK_F2:
+                    effect = 1;
                     break;
             }
             break;
@@ -820,6 +831,12 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
 #ifndef VAR_ICHANNEL0
 #define VAR_ICHANNEL0 "iChannel0"
 #endif
+#ifndef VAR_ITIME
+#define VAR_ITIME "iTime"
+#endif
+#ifndef VAR_IEFFECT
+#define VAR_IEFFECT "iEffect"
+#endif
     int post_size = strlen(post_frag);
     post_handle = glCreateShader(GL_FRAGMENT_SHADER);
     post_program = glCreateProgram();
@@ -835,6 +852,8 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     post_channel0_location = glGetUniformLocation(post_program, VAR_ICHANNEL0);
     post_fsaa_location = glGetUniformLocation(post_program, VAR_IFSAA);
     post_resolution_location = glGetUniformLocation(post_program, VAR_IRESOLUTION);
+    post_time_location = glGetUniformLocation(post_program, VAR_ITIME);
+    post_effect_location = glGetUniformLocation(post_program, VAR_IEFFECT);
     printf("++++ Post shader created.\n");
     
     // Create framebuffer for rendering first pass to
