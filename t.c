@@ -466,6 +466,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 case VK_F2:
                     effect = 1;
                     break;
+                case VK_F3:
+                    effect = 2;
+                    break;
+                case VK_F4:
+                    effect = 3;
+                    break;
+                case VK_F5:
+                    effect = 4;
+                    break;
+                case VK_F6:
+                    effect = 5;
+                    break;
+                case VK_F7:
+                    effect = 6;
+                    break;
+                case VK_F8:
+                    effect = 7;
+                    break;
+                case VK_F9:
+                    effect = 8;
+                    break;
+                case VK_F10:
+                    effect = 9;
+                    break;
+                
             }
             break;
             case WM_KEYUP:

@@ -33,24 +33,47 @@ void rand(in vec2 x, out float n)
     n = fract(sin(dot(sign(x)*abs(x) ,vec2(12.9898,78.233)))*43758.5453);
 }
 
+void lfnoise(in vec2 t, out float n)
+{
+    vec2 i = floor(t);
+    t = fract(t);
+    t = smoothstep(c.yy, c.xx, t);
+    vec2 v1, v2;
+    rand(i, v1.x);
+    rand(i+c.xy, v1.y);
+    rand(i+c.yx, v2.x);
+    rand(i+c.xx, v2.y);
+    v1 = c.zz+2.*mix(v1, v2, t.y);
+    n = mix(v1.x, v1.y, t.x);
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec4 col = vec4(0.);
     float bound = sqrt(iFSAA)-1.;
     
     float delta;
-    if(iEffect == 1) delta = .02;
+    vec2 n;
+    if(iEffect == 1) 
+    {
+        delta = .02;
+        rand(floor(20.*fragCoord.y/iResolution.y*c.xx-1337.*floor(12.*iTime)),n.x);
+        rand(floor(20.*fragCoord.y/iResolution.y*c.xx-1337.*floor(12.*iTime)+2337.),n.y);
+    }
     else delta = .0;
     
-    float n;
-    rand(floor(20.*fragCoord.y/iResolution.y*c.xx-1337.*floor(12.*iTime)),n);
-    
+    if(iEffect == 2)
+    {
+        lfnoise(12.*fragCoord-iTime, n.x);
+        lfnoise(12.*fragCoord-iTime-1337., n.y);
+        fragCoord += 20.*n;
+    }
     
    	for(float i = -.5*bound; i<=.5*bound; i+=1.)
         for(float j=-.5*bound; j<=.5*bound; j+=1.)
         {
-            vec3 cl = texture(iChannel0, fragCoord/iResolution.xy+delta*n*c.xy+vec2(i,j)*3.0/max(bound,1.)/iResolution.xy).rgb,
-                cr = texture(iChannel0, fragCoord/iResolution.xy-delta*n*c.xy+vec2(i,j)*3.0/max(bound,1.)/iResolution.xy).rgb,
+            vec3 cl = texture(iChannel0, fragCoord/iResolution.xy+delta*n+vec2(i,j)*3.0/max(bound,1.)/iResolution.xy).rgb,
+                cr = texture(iChannel0, fragCoord/iResolution.xy-delta*n+vec2(i,j)*3.0/max(bound,1.)/iResolution.xy).rgb,
                 cc = texture(iChannel0, fragCoord/iResolution.xy+vec2(i,j)*3.0/max(bound,1.)/iResolution.xy).rgb;
             col += vec4(cl.r, cc.g, cr.b,1.);
         }
