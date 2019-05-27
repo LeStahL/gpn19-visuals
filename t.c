@@ -510,6 +510,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 {
                     case VK_CONTROL:
                     scale_override = 0;
+                    scale = 0.;
                     break;
                 }
                 break;
