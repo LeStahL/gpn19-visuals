@@ -51,12 +51,12 @@ void dlogo210(in vec2 x, in float R, out float d);
 void zextrude(in float z, in float d2d, in float h, out float d);
 void dbox3(in vec3 x, in vec3 b, out float d);
 void dhexagonpattern(in vec2 p, out float d, out vec2 ind);
+void rot3(in vec3 p, out mat3 rot);
 
 // graph traversal for 210 logo effect
 void textpre(in vec3 x, out vec2 sdf)
 {
-    float blend = smoothstep(2.0, 6.0, iTime)*(1.0-smoothstep(6.0,12.0,iTime));
-    //blend *= step(-x.x-2.*smoothstep(2.,8.,iTime),-1.);
+    float blend = 1.;
     dbox3(x, vec3(1., .5, .01+blend), sdf.x);
 }
 
@@ -94,26 +94,32 @@ void texteffect(in vec3 x, out vec2 sdf)
     dlogo210(3.5*cind, 1., inner_logo);
     stroke(inner_logo, 0.35, inner_logo);
 
-    float blend = smoothstep(2.0, 6.0, iTime)*(1.0-smoothstep(6.0,12.0,iTime));
+    vec2 n;
+    lfnoise(ind-2.*iTime, n.x);
+    lfnoise(ind-2.*iTime-1337., n.y);
+    
+    // blend back to structure (t < 16., t > 12.)
+    float blend = clamp(.5+.5*n.x, 0., 1.);
+    
     if(inner_logo < 0.0 && blend >= 1.0e-3)
     {
         float noise;
         lfnoise(24.0*cind.xy-iTime, noise);
         zextrude(x.z,
                  1.5*x.z-inner_logo, 
-                 .5*(0.5+0.5*noise)*blend*step(-cind.x-2.*smoothstep(2.,8.,iTime),-1.),
+                 .5*(0.5+0.5*noise)*blend*(.5+.5*iScale),
                  sdf.x);
         stroke(sdf.x, 0.05*blend, sdf.x);
         sdf.y = 7.0;
     }
     stroke(sdf.x,0.1,sdf.x);
     
-    // Add guard objects for debugging
-    float dr = .03;
-    vec3 y = mod(x,dr)-.5*dr;
-    float guard = -length(max(abs(y)-vec3(.5*dr*c.xx, .6),0.));
-    guard = abs(guard)+dr*.1;
-    sdf.x = min(sdf.x, guard);
+//     // Add guard objects for debugging
+//     float dr = .02;
+//     vec3 y = mod(x,dr)-.5*dr;
+//     float guard = -length(max(abs(y)-vec3(.5*dr*c.xx, .6),0.));
+//     guard = abs(guard)+dr*.1;
+//     sdf.x = min(sdf.x, guard);
 }
 
 // Perform raymarching for actual object
@@ -129,7 +135,7 @@ void marchscene(in vec3 ro, in vec3 dir, in int N, in float eps, out vec3 x, out
             flag = true;
             break;
         }
-        d += s.x;
+        d += min(s.x,.005);
 	}
 }
 
@@ -165,8 +171,13 @@ void background2(in vec2 uv, out vec3 col)
     stroke(inner_logo, 0.35, inner_logo);
     stroke(inner_logo, 0.08, logo_border);
     
+    vec2 n;
+    lfnoise(ind-2.*iTime, n.x);
+    lfnoise(ind-2.*iTime-1337., n.y);
+    
     // blend back to structure (t < 16., t > 12.)
-    float blend = clamp(.25*(iTime-12.), 0., 1.);
+    float blend = 0.;
+    
     inner_logo = mix(inner_logo, d0, blend);
     logo_border = mix(logo_border, d0, blend);
 
@@ -182,19 +193,32 @@ void background2(in vec2 uv, out vec3 col)
     dm2 = 0.5+0.5*dm2;
     
     // Colors
-    vec3 orange = vec3(1.,0.27,0.);
-    orange = mix(c.yyy, orange, dm2);
-    vec3 gray = .5*length(orange)*c.xxx/sqrt(3.);
+    vec3 orange = vec3(0.26,0.35,0.40);
+    orange = mix(vec3(.60,0.24,0.60), orange, dm2);
+    vec3 gray = .25*length(orange)/sqrt(3.)*c.xxx;
+    
+    float mat = n.x;
+//     rand(i*c.xx, mat);
+    float phi = atan(uv.y, uv.x),
+        dhex,
+        na,
+        nal;
+    rand(floor(.33*iTime)*c.xx, na);
+    rand(floor(.33*iTime)*c.xx+1., nal);
+    na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
+    
+    mat3 RRR;
+    rot3(na*1.e3*vec3(1.1,1.5,1.9),RRR);
+
+    orange = mix((.5+.5*n.y)*orange,(1.+.8*mat)*abs(RRR*orange),.5+.5*n.x);
+    orange = mix(orange,.2*orange,.5+.5*n.y);
   
-    col = mix(mix(orange,c.xxx,step(-1.,-cind.x-2.*smoothstep(2.,8.,iTime)+.024)), gray, step(-1.,-cind.x-2.*smoothstep(2.,8.,iTime)));
+    col = orange;
     col = mix(col, gray, step(0.,inner_logo));
-    col = mix(col, c.yyy, step(logo_border,0.));
     
-    // blend to black at the end
-    col = mix(col, c.yyy, clamp(iTime-27., 0., 1.));
+    col = mix(col, mix(gray,orange,step(abs(d0)-.4,0.)), step(-abs(d0)+.2,0.));
+    col = mix(col, 4.*orange, step(logo_border,0.));
     
-    // blend in at the beginning
-    col = smoothstep(0.,12., iTime)*clamp(col*step(0.,d),0.,1.);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -202,6 +226,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     a = iResolution.x/iResolution.y;
     vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0), s = c.xy;
 
+    if(length(uv) > .5)
+    {
+        fragColor = vec4(c.yyy, 0.);
+        return;
+    }
+    uv *= 1.7;
+    
 	vec3 ro, x, dir;
     
     float d = 0.;
@@ -215,7 +246,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     if(hit) hit = false;
     else d = -ro.z/dir.z;
-    marchscene(ro, dir, 500, 2.0e-4, x, s, d, hit);
+    marchscene(ro, dir, 800, 2.0e-4, x, s, d, hit);
     
     if(hit)
     {
@@ -227,12 +258,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         	re = normalize(reflect(-l,n));
         float rev = abs(dot(re,dir)), ln = abs(dot(l,n));
 		background2(x.xy, col);
+        col = mix(col, .5*col, clamp(x.z/.2,0.,1.));
     }
     else
         background2((ro-ro.z/dir.z*dir).xy, col);
 
     col = clamp(col, 0., 1.);
-    col = mix(c.yyy, col, smoothstep(0.,.5,iTime)*(1.-smoothstep(14.5,15.,iTime)));
     fragColor = vec4(col,1.0);
 }
 
