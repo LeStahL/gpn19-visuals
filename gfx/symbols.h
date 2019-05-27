@@ -2,8 +2,8 @@
 #ifndef SYMBOLIZE_H
 #define SYMBOLIZE_H
 
-int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle, dcirclesegment_handle, dcircle_handle, dlinesegment_handle, dlogo210_handle;
-const int nsymbols = 20;
+int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle, dcirclesegment_handle, dcircle_handle, dlinesegment_handle, dlogo210_handle, rand3_handle;
+const int nsymbols = 21;
 const char *rand_source = "#version 130\n\n"
 "void rand(in vec2 x, out float n)\n"
 "{\n"
@@ -290,6 +290,13 @@ const char *dlogo210_source = "#version 130\n\n"
 "    d = min(d, d2);\n"
 "    dcirclesegment(x+R*c.xy, R, -.5*pi, .5*pi, d2);\n"
 "    d = min(d, d2);\n"
+"}\n"
+"\0";
+const char *rand3_source = "#version 130\n\n"
+"void rand3(in vec3 x, out float num)\n"
+"{\n"
+"    x += 400.;\n"
+"    num = fract(sin(dot(sign(x)*abs(x) ,vec3(12.9898,78.233,121.112)))*43758.5453);\n"
 "}\n"
 "\0";
 const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
@@ -1093,6 +1100,228 @@ const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210
 "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
 "}\n"
 "\0";
+const char *broccoli_source = "/* Corfield Imitation 1\n"
+" * Copyright (C) 2019  Alexander Kraus <nr4@z10.info>\n"
+" * \n"
+" * This program is free software: you can redistribute it and/or modify\n"
+" * it under the terms of the GNU General Public License as published by\n"
+" * the Free Software Foundation, either version 3 of the License, or\n"
+" * (at your option) any later version.\n"
+" * \n"
+" * This program is distributed in the hope that it will be useful,\n"
+" * but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+" * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+" * GNU General Public License for more details.\n"
+" * \n"
+" * You should have received a copy of the GNU General Public License\n"
+" * along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
+" */\n"
+"\n"
+"#version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"void rand(in vec2 x, out float num);\n"
+"void lfnoise(in vec2 t, out float n);\n"
+"\n"
+"void rand3(in vec3 x, out float num);\n"
+"void zextrude(in float z, in float d2d, in float h, out float d);\n"
+"void stroke(in float d0, in float s, out float d);\n"
+"void smoothmin(in float a, in float b, in float k, out float dst);\n"
+"void dbox3(in vec3 x, in vec3 b, out float d);\n"
+"\n"
+"// Random Quadtree\n"
+"void dcubetree(in vec3 x, in float threshold, in float depth, out float d, out float faco)\n"
+"{\n"
+"    d = 1.;\n"
+"    vec3 y = x, \n"
+"        yi;\n"
+"    float size = .5,\n"
+"	    fac = 1.;\n"
+"    faco = 1.;\n"
+"    for(float i=0.; i<depth; i+=1.)\n"
+"    {\n"
+"        vec3 y0 = y;\n"
+"        y = mod(y, size)-.5*size;\n"
+"        yi = y0-y;\n"
+"		float r;\n"
+"        rand3(yi+fac,r);\n"
+"        fac *= r*step(r,threshold);\n"
+"        if(fac != 0.)\n"
+"        {\n"
+"            float dd;\n"
+"            dbox3(y,(.35)*size*c.xxx,dd);\n"
+"//             dd = mix(dd,length(y)-(.3)*size,step(r,threshold));\n"
+"            dd = abs(dd)-.01*size;\n"
+"            smoothmin(d,dd,.01,d);\n"
+"        } else break;\n"
+"        \n"
+"        size *= .5;\n"
+"    }\n"
+"    faco += fac*fac;\n"
+"}\n"
+"\n"
+"void rot3(in vec3 p, out mat3 rot)\n"
+"{\n"
+"    rot = mat3(c.xyyy, cos(p.x), sin(p.x), 0., -sin(p.x), cos(p.x))\n"
+"        *mat3(cos(p.y), 0., -sin(p.y), c.yxy, sin(p.y), 0., cos(p.y))\n"
+"        *mat3(cos(p.z), -sin(p.z), 0., sin(p.z), cos(p.z), c.yyyx);\n"
+"}\n"
+"\n"
+"// Scene\n"
+"float mat;\n"
+"void scene(in vec3 x, out vec2 d)\n"
+"{\n"
+"    d = c.xx;\n"
+"    \n"
+"    x.z -= .01*iTime;\n"
+"    \n"
+"    dcubetree((2.)*x-iTime*c.yyx-.1*iTime, .5,  6.-6.*iScale, d.x, mat);\n"
+"    float d2, m2 = 0.;\n"
+"    //dcubetree((3.+.5*iScale)*x+iTime*c.yyx-.1*iTime, .5, 6., d2, m2);\n"
+"//     mat = 5555.*mat;\n"
+"	//lfnoise((5.*x.z-5.*iTime)*c.xx, mat);\n"
+"	//mat = .5+.5*mat;\n"
+"    //smoothmin(d.x,d2,.2+.2*iScale,d.x);\n"
+"    \n"
+"    d2 = length(x.xy)-.1;\n"
+"    d.x = max(d.x, -d2);\n"
+"    d = min(d, -length(x.xy)+.3);\n"
+"    \n"
+"//     d -= .01;\n"
+"    \n"
+"    stroke(d.x, .01, d.x);\n"
+"}\n"
+"\n"
+"// Normal\n"
+"const float dx = 5.e-4;\n"
+"void normal(in vec3 x, out vec3 n);\n"
+"\n"
+"// Texture\n"
+"void colorize(in vec2 x, out vec3 col)\n"
+"{    \n"
+"    float phi = .1*iTime;\n"
+"    \n"
+"    vec3 white = vec3(0.89,0.44,0.23),\n"
+"        gray =vec3(0.25,0.23,0.21);\n"
+"    float size = .1;\n"
+"    \n"
+"    \n"
+"    vec2 y = mod(x,size)-.5*size;\n"
+"    y = abs(y)-.001;\n"
+"    \n"
+"    float d = min(y.x,y.y);\n"
+"    col = mix(white, gray, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d*mat));\n"
+"}\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    // Set up coordinates\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
+"    vec3 col = c.yyy;\n"
+"    \n"
+"    if(length(uv) > .5)\n"
+"    {\n"
+"        fragColor = vec4(col, 0.);\n"
+"        return;\n"
+"    }\n"
+"        \n"
+"     // Camera setup\n"
+"    float pp = .3*iTime;\n"
+"    vec3 o = c.yyx,\n"
+"        t = c.yyy,\n"
+"        dir = normalize(t-o),\n"
+"        r = normalize(c.xyy),\n"
+"        u = normalize(cross(r,dir)),\n"
+"        n,\n"
+"        x,\n"
+"        l;\n"
+"    t += uv.x*r + uv.y*u;\n"
+"    dir = normalize(t-o);\n"
+"    vec2 s;\n"
+"    float d = (.1)/length(dir.xy);// -(o.z-.12)/dir.z;\n"
+"    int N = 650,\n"
+"        i;\n"
+"    \n"
+"    // Graph\n"
+"    x = o + d * dir;\n"
+"    \n"
+"    // Actual Scene\n"
+"    {\n"
+"\n"
+"        // Raymarching\n"
+"        for(i=0; i<N; ++i)\n"
+"        {\n"
+"            x = o + d * dir;\n"
+"            scene(x,s);\n"
+"            if(s.x < 1.e-4) break;\n"
+"            d += min(s.x,.0005);\n"
+"        }\n"
+"\n"
+"        // Illumination\n"
+"        l = normalize(x+c.yxx);\n"
+"        if(i<N)\n"
+"        {\n"
+"            normal(x,n);\n"
+"            mat += 14.*sign(n.z);\n"
+"            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*vec3(0.89,0.44,0.23),.5+.5*sin(x.z));\n"
+"            col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));\n"
+"            float phi = atan(x.y, x.x),\n"
+"                dhex,\n"
+"                na,\n"
+"                nal;\n"
+"            vec2 ind;\n"
+"            rand(floor(.33*iTime)*c.xx, na);\n"
+"            rand(floor(.33*iTime)*c.xx+1., nal);\n"
+"            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
+"            \n"
+"            mat3 RR;\n"
+"            float ras;\n"
+"            rand(mat*c.xx,ras);\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+1.*ras+.5*cos(x.z),RR);\n"
+"\n"
+"            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),.5+.5*sin(x.z));\n"
+"            //rot3(c.xxx+x.z+1200.*na*mat+1.e3*na,RR);\n"
+"            col = mix(col,abs(RR*vec3(0.25,0.23,0.21)),.5+.5*cos(.5*(x.z)));\n"
+"            \n"
+"            col = mix(col, .5*abs(RR*RR*vec3(0.25,0.23,0.21)), clamp(length(x.xy)/.2, 0.,1.));\n"
+"            col = mix(col, abs(RR*col), step(0.,length(sign(n))));\n"
+"            \n"
+"            col = mix(col, 3.*col, step(.9,length(x.xy))*step(1.1,length(x.xy)));\n"
+"        }\n"
+"    }\n"
+"    vec3 c1 = col;\n"
+"    // Colorize\n"
+"    col = .8*col\n"
+"        + .9*col*abs(dot(l,n))\n"
+"        +5.4*col*abs(pow(dot(reflect(-l,n),dir),3.));\n"
+"        \n"
+"    float dd;\n"
+"    rand(1200.*uv, dd);\n"
+"    col += dd*.1*c.xxx;\n"
+"    \n"
+"    col = mix(col, c1, clamp(float(i)/float(N),0.,1.));\n"
+"    \n"
+"    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
 void Loadrand()
 {
     int rand_size = strlen(rand_source);
@@ -1353,6 +1582,19 @@ void Loaddlogo210()
 #endif
     progress += .2/(float)nsymbols;
 }
+void Loadrand3()
+{
+    int rand3_size = strlen(rand3_source);
+    rand3_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(rand3_handle, 1, (GLchar **)&rand3_source, &rand3_size);
+    glCompileShader(rand3_handle);
+#ifdef DEBUG
+    printf("---> rand3 Shader:\n");
+    debug(rand3_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
 
 void LoadSymbols()
 {
@@ -1396,8 +1638,10 @@ void LoadSymbols()
     updateBar();
     Loaddlogo210();
     updateBar();
+    Loadrand3();
+    updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -1426,7 +1670,14 @@ team210_logo_iHighScale_location;
 team210_logo_iNBeats_location;
 team210_logo_iResolution_location;
 team210_logo_iFFT_location;
-const int nprograms = 4;
+int broccoli_iTime_location;
+broccoli_iFFTWidth_location;
+broccoli_iScale_location;
+broccoli_iHighScale_location;
+broccoli_iNBeats_location;
+broccoli_iResolution_location;
+broccoli_iFFT_location;
+const int nprograms = 5;
 
 void Loadhexagontunnel()
 {
@@ -1587,6 +1838,44 @@ void Loadteam210_logo()
     progress += .2/(float)nprograms;
 }
 
+void Loadbroccoli()
+{
+    int broccoli_size = strlen(broccoli_source);
+    broccoli_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(broccoli_handle, 1, (GLchar **)&broccoli_source, &broccoli_size);
+    glCompileShader(broccoli_handle);
+#ifdef DEBUG
+    printf("---> broccoli Shader:\n");
+    debug(broccoli_handle);
+    printf(">>>>\n");
+#endif
+    broccoli_program = glCreateProgram();
+    glAttachShader(broccoli_program,broccoli_handle);
+    glAttachShader(broccoli_program,rand_handle);
+    glAttachShader(broccoli_program,lfnoise_handle);
+    glAttachShader(broccoli_program,rand3_handle);
+    glAttachShader(broccoli_program,zextrude_handle);
+    glAttachShader(broccoli_program,stroke_handle);
+    glAttachShader(broccoli_program,smoothmin_handle);
+    glAttachShader(broccoli_program,dbox3_handle);
+    glAttachShader(broccoli_program,normal_handle);
+    glLinkProgram(broccoli_program);
+#ifdef DEBUG
+    printf("---> broccoli Program:\n");
+    debugp(broccoli_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(broccoli_program);
+    broccoli_iTime_location = glGetUniformLocation(broccoli_program, "iTime");
+    broccoli_iFFTWidth_location = glGetUniformLocation(broccoli_program, "iFFTWidth");
+    broccoli_iScale_location = glGetUniformLocation(broccoli_program, "iScale");
+    broccoli_iHighScale_location = glGetUniformLocation(broccoli_program, "iHighScale");
+    broccoli_iNBeats_location = glGetUniformLocation(broccoli_program, "iNBeats");
+    broccoli_iResolution_location = glGetUniformLocation(broccoli_program, "iResolution");
+    broccoli_iFFT_location = glGetUniformLocation(broccoli_program, "iFFT");
+    progress += .2/(float)nprograms;
+}
+
 void LoadPrograms()
 {
     Loadhexagontunnel();
@@ -1596,6 +1885,8 @@ void LoadPrograms()
     Loadstartunnel();
     updateBar();
     Loadteam210_logo();
+    updateBar();
+    Loadbroccoli();
     updateBar();
 }
 #endif

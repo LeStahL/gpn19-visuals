@@ -318,6 +318,9 @@ void draw()
                 {
                     highscale += power_spectrum[j];
                 }
+                
+                scale = max(scale,0.);
+                scale = min(scale,1.);
             }
 //             printf("%le\n", scale);
             
@@ -377,6 +380,15 @@ void draw()
         glUniform1f(team210_logo_iScale_location, scale);
         glUniform1f(team210_logo_iNBeats_location, nbeats);
         glUniform1f(team210_logo_iHighScale_location, highscale);
+    }
+    else if(override_index == 5)
+    {
+        glUseProgram(broccoli_program);
+        glUniform1f(broccoli_iTime_location, t);
+        glUniform2f(broccoli_iResolution_location, w, h);
+        glUniform1f(broccoli_iScale_location, scale);
+        glUniform1f(broccoli_iNBeats_location, nbeats);
+        glUniform1f(broccoli_iHighScale_location, highscale);
     }
     
     quad();
