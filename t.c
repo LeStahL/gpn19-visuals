@@ -366,6 +366,15 @@ void draw()
         glUniform1f(startunnel_iNBeats_location, nbeats);
         glUniform1f(startunnel_iHighScale_location, highscale);
     }
+    else if(override_index == 4)
+    {
+        glUseProgram(team210_logo_program);
+        glUniform1f(team210_logo_iTime_location, t);
+        glUniform2f(team210_logo_iResolution_location, w, h);
+        glUniform1f(team210_logo_iScale_location, scale);
+        glUniform1f(team210_logo_iNBeats_location, nbeats);
+        glUniform1f(team210_logo_iHighScale_location, highscale);
+    }
     
     quad();
     

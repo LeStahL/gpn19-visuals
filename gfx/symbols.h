@@ -2,8 +2,8 @@
 #ifndef SYMBOLIZE_H
 #define SYMBOLIZE_H
 
-int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle;
-const int nsymbols = 16;
+int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle, dcirclesegment_handle, dcircle_handle, dlinesegment_handle, dlogo210_handle;
+const int nsymbols = 20;
 const char *rand_source = "#version 130\n\n"
 "void rand(in vec2 x, out float n)\n"
 "{\n"
@@ -247,6 +247,49 @@ const char *dstar_source = "#version 130\n\n"
 "        ff = a.y*vec2(cos(d),sin(d))-p1;\n"
 "   	ff = ff.yx*c.zx;\n"
 "    dst = dot(x-p1,ff)/length(ff);\n"
+"}\n"
+"\0";
+const char *dcirclesegment_source = "#version 130\n\n"
+"const float pi = acos(-1.);\n"
+"void dcirclesegment(in vec2 x, in float R, in float p0, in float p1, out float d)\n"
+"{\n"
+"    float p = atan(x.y, x.x);\n"
+"    vec2 philo = vec2(max(p0, p1), min(p0, p1));\n"
+"    if((p < philo.x && p > philo.y) || (p+2.0*pi < philo.x && p+2.0*pi > philo.y) || (p-2.0*pi < philo.x && p-2.0*pi > philo.y))\n"
+"        d = abs(length(x)-R);\n"
+"    else d = min(\n"
+"        length(x-vec2(cos(p0), sin(p0))),\n"
+"        length(x-vec2(cos(p1), sin(p1)))\n"
+"        );\n"
+"}\n"
+"\0";
+const char *dcircle_source = "#version 130\n\n"
+"void dcircle(in vec2 x, in float R, out float d)\n"
+"{\n"
+"    d = abs(length(x)-R);\n"
+"}\n"
+"\0";
+const char *dlinesegment_source = "#version 130\n\n"
+"void dlinesegment(in vec2 x, in vec2 p1, in vec2 p2, out float d)\n"
+"{\n"
+"    vec2 da = p2-p1;\n"
+"    d = length(x-mix(p1, p2, clamp(dot(x-p1, da)/dot(da,da),0.,1.)));\n"
+"}\n"
+"\0";
+const char *dlogo210_source = "#version 130\n\n"
+"const vec3 c = vec3(1.,0.,-1.);\n"
+"const float pi = acos(-1.);\n"
+"void dcirclesegment(in vec2 x, in float R, in float p0, in float p1, out float d);\n"
+"void dcircle(in vec2 x, in float R, out float d);\n"
+"void dlinesegment(in vec2 x, in vec2 p1, in vec2 p2, out float d);\n"
+"void dlogo210(in vec2 x, in float R, out float d)\n"
+"{\n"
+"    float d2;\n"
+"    dcircle(x+R*c.zy, R, d);\n"
+"    dlinesegment(x, c.yz, c.yx, d2);\n"
+"    d = min(d, d2);\n"
+"    dcirclesegment(x+R*c.xy, R, -.5*pi, .5*pi, d2);\n"
+"    d = min(d, d2);\n"
 "}\n"
 "\0";
 const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
@@ -771,6 +814,249 @@ const char *startunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 a
 "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
 "}\n"
 "\0";
+const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
+"* Copyright (C) 2018  Alexander Kraus <nr4@z10.info>\n"
+"*\n"
+"* This program is free software: you can redistribute it and/or modify\n"
+"* it under the terms of the GNU General Public License as published by\n"
+"* the Free Software Foundation, either version 3 of the License, or\n"
+"* (at your option) any later version.\n"
+"*\n"
+"* This program is distributed in the hope that it will be useful,\n"
+"* but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"* GNU General Public License for more details.\n"
+"*\n"
+"* You should have received a copy of the GNU General Public License\n"
+"* along with this program.  If not, see <https://www.gnu.org/licenses/>.\n"
+"*/\n"
+"\n"
+"#version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"\n"
+"out vec4 gl_FragColor;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"void rand(in vec2 x, out float num);\n"
+"void lfnoise(in vec2 t, out float num);\n"
+"void mfnoise(in vec2 x, in float fmin, in float fmax, in float alpha, out float num);\n"
+"\n"
+"void camerasetup(in vec2 uv, out vec3 ro, out vec3 dir)\n"
+"{\n"
+"    vec3 right = c.xyy, up = c.yxy, target = c.yyy;\n"
+"    ro = c.yyx+.3*vec3(cos(iTime), sin(iTime), 0.)*(1.-smoothstep(11., 13., iTime));\n"
+"    dir = normalize(target + uv.x * right + uv.y * up - ro);\n"
+"}\n"
+"\n"
+"void stroke(in float d0, in float s, out float d);\n"
+"void dcirclesegment(in vec2 x, in float R, in float p0, in float p1, out float d);\n"
+"void dcircle(in vec2 x, in float R, out float d);\n"
+"void dlinesegment(in vec2 x, in vec2 p1, in vec2 p2, out float d);\n"
+"void dlogo210(in vec2 x, in float R, out float d);\n"
+"void zextrude(in float z, in float d2d, in float h, out float d);\n"
+"void dbox3(in vec3 x, in vec3 b, out float d);\n"
+"void dhexagonpattern(in vec2 p, out float d, out vec2 ind);\n"
+"\n"
+"// graph traversal for 210 logo effect\n"
+"void textpre(in vec3 x, out vec2 sdf)\n"
+"{\n"
+"    float blend = smoothstep(2.0, 6.0, iTime)*(1.0-smoothstep(6.0,12.0,iTime));\n"
+"    //blend *= step(-x.x-2.*smoothstep(2.,8.,iTime),-1.);\n"
+"    dbox3(x, vec3(1., .5, .01+blend), sdf.x);\n"
+"}\n"
+"\n"
+"// Perform raymarching for bounding object\n"
+"void marchbounds(in vec3 ro, in vec3 dir, in int N, in float eps, out vec3 x, out vec2 s, out float d, out bool flag)\n"
+"{\n"
+"    flag = false;\n"
+"    for(int ia=0; ia<max(N,0); ++ia)\n"
+"	{\n"
+"        x = ro + d*dir;\n"
+"        textpre(x,s);\n"
+"        if(s.x < eps)\n"
+"        {\n"
+"            flag = true;\n"
+"            break;\n"
+"        }\n"
+"        d += s.x;\n"
+"	}\n"
+"}\n"
+"\n"
+"// 3D Effect on text in intro (210 logo)\n"
+"void texteffect(in vec3 x, out vec2 sdf)\n"
+"{\n"
+"    // Start with z=0 plane\n"
+"    sdf = vec2(x.z, 7.0);\n"
+"    vec2 ind;\n"
+"    float hex;\n"
+"    dhexagonpattern(48.0*x.xy, hex, ind);\n"
+"    \n"
+"    // compute hexagon indices in cartesian coordinates\n"
+"    vec2 cind = ind/48.0;\n"
+"    \n"
+"    // build up team210 logo (t < 12.)\n"
+"    float inner_logo, logo_border; \n"
+"    dlogo210(3.5*cind, 1., inner_logo);\n"
+"    stroke(inner_logo, 0.35, inner_logo);\n"
+"\n"
+"    float blend = smoothstep(2.0, 6.0, iTime)*(1.0-smoothstep(6.0,12.0,iTime));\n"
+"    if(inner_logo < 0.0 && blend >= 1.0e-3)\n"
+"    {\n"
+"        float noise;\n"
+"        lfnoise(24.0*cind.xy-iTime, noise);\n"
+"        zextrude(x.z,\n"
+"                 1.5*x.z-inner_logo, \n"
+"                 .5*(0.5+0.5*noise)*blend*step(-cind.x-2.*smoothstep(2.,8.,iTime),-1.),\n"
+"                 sdf.x);\n"
+"        stroke(sdf.x, 0.05*blend, sdf.x);\n"
+"        sdf.y = 7.0;\n"
+"    }\n"
+"    stroke(sdf.x,0.1,sdf.x);\n"
+"    \n"
+"    // Add guard objects for debugging\n"
+"    float dr = .03;\n"
+"    vec3 y = mod(x,dr)-.5*dr;\n"
+"    float guard = -length(max(abs(y)-vec3(.5*dr*c.xx, .6),0.));\n"
+"    guard = abs(guard)+dr*.1;\n"
+"    sdf.x = min(sdf.x, guard);\n"
+"}\n"
+"\n"
+"// Perform raymarching for actual object\n"
+"void marchscene(in vec3 ro, in vec3 dir, in int N, in float eps, out vec3 x, out vec2 s, out float d, out bool flag)\n"
+"{\n"
+"    flag = false;\n"
+"    for(int ia=0; ia<max(N,0); ++ia)\n"
+"	{\n"
+"        x = ro + d*dir;\n"
+"        texteffect(x,s);\n"
+"        if(s.x < eps)\n"
+"        {\n"
+"            flag = true;\n"
+"            break;\n"
+"        }\n"
+"        d += s.x;\n"
+"	}\n"
+"}\n"
+"\n"
+"void calcnormal(in vec3 x, in float eps, out vec3 n)\n"
+"{\n"
+"    vec2 s, sp;\n"
+"    texteffect(x, s);\n"
+"    texteffect(x+eps*c.xyy, sp);\n"
+"    n.x = sp.x-s.x;\n"
+"    texteffect(x+eps*c.yxy, sp);\n"
+"    n.y = sp.x-s.x;\n"
+"    texteffect(x+eps*c.yyx, sp);\n"
+"    n.z = sp.x-s.x;\n"
+"    n = normalize(n);\n"
+"}\n"
+"\n"
+"// Initial intro\n"
+"void background2(in vec2 uv, out vec3 col)\n"
+"{\n"
+"    col = c.yyy;\n"
+"    \n"
+"    // hexagonal grid\n"
+"    float d, d0;\n"
+"    vec2 ind;\n"
+"    dhexagonpattern(48.0*uv, d0, ind);\n"
+"    d = -d0;\n"
+"    stroke(d, 0.1, d);\n"
+"    vec2 cind = ind/48.0;\n"
+"    \n"
+"    // build up team210 logo (t < 12.)\n"
+"    float inner_logo, logo_border; \n"
+"    dlogo210(3.5*cind, 1., inner_logo);\n"
+"    stroke(inner_logo, 0.35, inner_logo);\n"
+"    stroke(inner_logo, 0.08, logo_border);\n"
+"    \n"
+"    // blend back to structure (t < 16., t > 12.)\n"
+"    float blend = clamp(.25*(iTime-12.), 0., 1.);\n"
+"    inner_logo = mix(inner_logo, d0, blend);\n"
+"    logo_border = mix(logo_border, d0, blend);\n"
+"\n"
+"    // make background change the color with time\n"
+"    vec2 dt;\n"
+"    lfnoise(15.0*cind+2.0, dt.x);\n"
+"    lfnoise(15.0*cind+3.0, dt.y);\n"
+"    dt *= 2.;\n"
+"    float dm, dm2;\n"
+"    lfnoise(50.0*cind, dm);\n"
+"    dm = 0.5+0.5*dm;\n"
+"    lfnoise(6.5*cind-dt-2.0*iTime*c.xx, dm2);\n"
+"    dm2 = 0.5+0.5*dm2;\n"
+"    \n"
+"    // Colors\n"
+"    vec3 orange = vec3(1.,0.27,0.);\n"
+"    orange = mix(c.yyy, orange, dm2);\n"
+"    vec3 gray = .5*length(orange)*c.xxx/sqrt(3.);\n"
+"  \n"
+"    col = mix(mix(orange,c.xxx,step(-1.,-cind.x-2.*smoothstep(2.,8.,iTime)+.024)), gray, step(-1.,-cind.x-2.*smoothstep(2.,8.,iTime)));\n"
+"    col = mix(col, gray, step(0.,inner_logo));\n"
+"    col = mix(col, c.yyy, step(logo_border,0.));\n"
+"    \n"
+"    // blend to black at the end\n"
+"    col = mix(col, c.yyy, clamp(iTime-27., 0., 1.));\n"
+"    \n"
+"    // blend in at the beginning\n"
+"    col = smoothstep(0.,12., iTime)*clamp(col*step(0.,d),0.,1.);\n"
+"}\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0), s = c.xy;\n"
+"\n"
+"	vec3 ro, x, dir;\n"
+"    \n"
+"    float d = 0.;\n"
+"    bool hit = false;\n"
+"    \n"
+"    vec3 col = c.yyy;\n"
+"                \n"
+"	camerasetup(uv, ro, dir);\n"
+"    d = (.5-ro.z)/dir.z;\n"
+"    marchbounds(ro, dir, 150, 2.0e-4, x, s, d, hit);\n"
+"\n"
+"    if(hit) hit = false;\n"
+"    else d = -ro.z/dir.z;\n"
+"    marchscene(ro, dir, 500, 2.0e-4, x, s, d, hit);\n"
+"    \n"
+"    if(hit)\n"
+"    {\n"
+"        vec3 n;\n"
+"        calcnormal(x, 2.0e-4, n);\n"
+"\n"
+"        float rs = 1.9;\n"
+"        vec3 l = x+1.*c.yyx,\n"
+"        	re = normalize(reflect(-l,n));\n"
+"        float rev = abs(dot(re,dir)), ln = abs(dot(l,n));\n"
+"		background2(x.xy, col);\n"
+"    }\n"
+"    else\n"
+"        background2((ro-ro.z/dir.z*dir).xy, col);\n"
+"\n"
+"    col = clamp(col, 0., 1.);\n"
+"    col = mix(c.yyy, col, smoothstep(0.,.5,iTime)*(1.-smoothstep(14.5,15.,iTime)));\n"
+"    fragColor = vec4(col,1.0);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
 void Loadrand()
 {
     int rand_size = strlen(rand_source);
@@ -979,6 +1265,58 @@ void Loaddstar()
 #endif
     progress += .2/(float)nsymbols;
 }
+void Loaddcirclesegment()
+{
+    int dcirclesegment_size = strlen(dcirclesegment_source);
+    dcirclesegment_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dcirclesegment_handle, 1, (GLchar **)&dcirclesegment_source, &dcirclesegment_size);
+    glCompileShader(dcirclesegment_handle);
+#ifdef DEBUG
+    printf("---> dcirclesegment Shader:\n");
+    debug(dcirclesegment_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
+void Loaddcircle()
+{
+    int dcircle_size = strlen(dcircle_source);
+    dcircle_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dcircle_handle, 1, (GLchar **)&dcircle_source, &dcircle_size);
+    glCompileShader(dcircle_handle);
+#ifdef DEBUG
+    printf("---> dcircle Shader:\n");
+    debug(dcircle_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
+void Loaddlinesegment()
+{
+    int dlinesegment_size = strlen(dlinesegment_source);
+    dlinesegment_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dlinesegment_handle, 1, (GLchar **)&dlinesegment_source, &dlinesegment_size);
+    glCompileShader(dlinesegment_handle);
+#ifdef DEBUG
+    printf("---> dlinesegment Shader:\n");
+    debug(dlinesegment_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
+void Loaddlogo210()
+{
+    int dlogo210_size = strlen(dlogo210_source);
+    dlogo210_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dlogo210_handle, 1, (GLchar **)&dlogo210_source, &dlogo210_size);
+    glCompileShader(dlogo210_handle);
+#ifdef DEBUG
+    printf("---> dlogo210 Shader:\n");
+    debug(dlogo210_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
 
 void LoadSymbols()
 {
@@ -1014,8 +1352,16 @@ void LoadSymbols()
     updateBar();
     Loaddstar();
     updateBar();
+    Loaddcirclesegment();
+    updateBar();
+    Loaddcircle();
+    updateBar();
+    Loaddlinesegment();
+    updateBar();
+    Loaddlogo210();
+    updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -1037,7 +1383,14 @@ startunnel_iHighScale_location;
 startunnel_iNBeats_location;
 startunnel_iResolution_location;
 startunnel_iFFT_location;
-const int nprograms = 3;
+int team210_logo_iTime_location;
+team210_logo_iFFTWidth_location;
+team210_logo_iScale_location;
+team210_logo_iHighScale_location;
+team210_logo_iNBeats_location;
+team210_logo_iResolution_location;
+team210_logo_iFFT_location;
+const int nprograms = 4;
 
 void Loadhexagontunnel()
 {
@@ -1156,6 +1509,47 @@ void Loadstartunnel()
     progress += .2/(float)nprograms;
 }
 
+void Loadteam210_logo()
+{
+    int team210_logo_size = strlen(team210_logo_source);
+    team210_logo_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(team210_logo_handle, 1, (GLchar **)&team210_logo_source, &team210_logo_size);
+    glCompileShader(team210_logo_handle);
+#ifdef DEBUG
+    printf("---> team210_logo Shader:\n");
+    debug(team210_logo_handle);
+    printf(">>>>\n");
+#endif
+    team210_logo_program = glCreateProgram();
+    glAttachShader(team210_logo_program,team210_logo_handle);
+    glAttachShader(team210_logo_program,rand_handle);
+    glAttachShader(team210_logo_program,lfnoise_handle);
+    glAttachShader(team210_logo_program,mfnoise_handle);
+    glAttachShader(team210_logo_program,stroke_handle);
+    glAttachShader(team210_logo_program,dcirclesegment_handle);
+    glAttachShader(team210_logo_program,dcircle_handle);
+    glAttachShader(team210_logo_program,dlinesegment_handle);
+    glAttachShader(team210_logo_program,dlogo210_handle);
+    glAttachShader(team210_logo_program,zextrude_handle);
+    glAttachShader(team210_logo_program,dbox3_handle);
+    glAttachShader(team210_logo_program,dhexagonpattern_handle);
+    glLinkProgram(team210_logo_program);
+#ifdef DEBUG
+    printf("---> team210_logo Program:\n");
+    debugp(team210_logo_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(team210_logo_program);
+    team210_logo_iTime_location = glGetUniformLocation(team210_logo_program, "iTime");
+    team210_logo_iFFTWidth_location = glGetUniformLocation(team210_logo_program, "iFFTWidth");
+    team210_logo_iScale_location = glGetUniformLocation(team210_logo_program, "iScale");
+    team210_logo_iHighScale_location = glGetUniformLocation(team210_logo_program, "iHighScale");
+    team210_logo_iNBeats_location = glGetUniformLocation(team210_logo_program, "iNBeats");
+    team210_logo_iResolution_location = glGetUniformLocation(team210_logo_program, "iResolution");
+    team210_logo_iFFT_location = glGetUniformLocation(team210_logo_program, "iFFT");
+    progress += .2/(float)nprograms;
+}
+
 void LoadPrograms()
 {
     Loadhexagontunnel();
@@ -1163,6 +1557,8 @@ void LoadPrograms()
     Loadvoronoinet();
     updateBar();
     Loadstartunnel();
+    updateBar();
+    Loadteam210_logo();
     updateBar();
 }
 #endif
