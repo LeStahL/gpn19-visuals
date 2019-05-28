@@ -22,6 +22,7 @@ uniform float iFFTWidth;
 uniform float iScale;
 uniform float iHighScale;
 uniform float iNBeats;
+uniform float iDial0;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;
 
@@ -44,7 +45,7 @@ void scene(in vec3 x, out vec2 d)
 {
     d = c.xx;
     
-    x.z -= 1.*iTime;
+    x.z -= mix(1.,5.,iDial0)*iTime;
     
     float phi = atan(x.y, x.x),
         dhex,

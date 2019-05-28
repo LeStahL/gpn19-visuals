@@ -110,7 +110,7 @@ const char * post_frag =
 "        vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
 "//         rand(floor(.33*iTime)*c.xx, n.x);\n"
 "//         n.x = max(floor(12.*n.x),3.);\n"
-"        n.x = floor(mix(3.,16.,iFader3));\n"
+"        n.x = floor(mix(3.,10.,iFader3));\n"
 "        float phi = abs(mod(atan(uv.y, uv.x),pi/n.x)-.5*pi/n.x);\n"
 "        uv = length(uv)*vec2(cos(phi), sin(phi));\n"
 "        fragCoord = (uv + .5*vec2(a,1.))*iResolution.yy;\n"

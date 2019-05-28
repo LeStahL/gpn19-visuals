@@ -391,6 +391,7 @@ void draw()
         glUniform1f(hexagontunnel_iScale_location, scale);
         glUniform1f(hexagontunnel_iNBeats_location, nbeats);
         glUniform1f(hexagontunnel_iHighScale_location, highscale);
+        glUniform1f(hexagontunnel_iDial0_location, dial_0_value);
     }
     else if(override_index == 2)
     {
@@ -427,6 +428,7 @@ void draw()
         glUniform1f(broccoli_iScale_location, scale);
         glUniform1f(broccoli_iNBeats_location, nbeats);
         glUniform1f(broccoli_iHighScale_location, highscale);
+        glUniform1f(broccoli_iDial0_location, dial_0_value);
     }
     
     quad();

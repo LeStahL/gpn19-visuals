@@ -323,6 +323,7 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "uniform float iScale;\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
+"uniform float iDial0;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -345,7 +346,7 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "{\n"
 "    d = c.xx;\n"
 "    \n"
-"    x.z -= 1.*iTime;\n"
+"    x.z -= mix(1.,5.,iDial0)*iTime;\n"
 "    \n"
 "    float phi = atan(x.y, x.x),\n"
 "        dhex,\n"
@@ -475,6 +476,7 @@ const char *voronoinet_source = "/* Corfield Imitation 1\n"
 "uniform float iScale;\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
+"uniform float iDial0;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -685,6 +687,7 @@ const char *startunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 a
 "uniform float iScale;\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
+"uniform float iDial0;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -845,6 +848,7 @@ const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210
 "uniform float iScale;\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
+"uniform float iDial0;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -1124,6 +1128,7 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "uniform float iScale;\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
+"uniform float iDial0;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -1185,7 +1190,7 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "{\n"
 "    d = c.xx;\n"
 "    \n"
-"    x.z -= .01*iTime;\n"
+"    x.z -= mix(.01,.1,iDial0)*iTime;\n"
 "    \n"
 "    dcubetree((2.)*x-iTime*c.yyx-.1*iTime, .5,  6.-6.*iScale, d.x, mat);\n"
 "    float d2, m2 = 0.;\n"
@@ -1647,6 +1652,7 @@ hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
 hexagontunnel_iHighScale_location;
 hexagontunnel_iNBeats_location;
+hexagontunnel_iDial0_location;
 hexagontunnel_iResolution_location;
 hexagontunnel_iFFT_location;
 int voronoinet_iTime_location;
@@ -1654,6 +1660,7 @@ voronoinet_iFFTWidth_location;
 voronoinet_iScale_location;
 voronoinet_iHighScale_location;
 voronoinet_iNBeats_location;
+voronoinet_iDial0_location;
 voronoinet_iResolution_location;
 voronoinet_iFFT_location;
 int startunnel_iTime_location;
@@ -1661,6 +1668,7 @@ startunnel_iFFTWidth_location;
 startunnel_iScale_location;
 startunnel_iHighScale_location;
 startunnel_iNBeats_location;
+startunnel_iDial0_location;
 startunnel_iResolution_location;
 startunnel_iFFT_location;
 int team210_logo_iTime_location;
@@ -1668,6 +1676,7 @@ team210_logo_iFFTWidth_location;
 team210_logo_iScale_location;
 team210_logo_iHighScale_location;
 team210_logo_iNBeats_location;
+team210_logo_iDial0_location;
 team210_logo_iResolution_location;
 team210_logo_iFFT_location;
 int broccoli_iTime_location;
@@ -1675,6 +1684,7 @@ broccoli_iFFTWidth_location;
 broccoli_iScale_location;
 broccoli_iHighScale_location;
 broccoli_iNBeats_location;
+broccoli_iDial0_location;
 broccoli_iResolution_location;
 broccoli_iFFT_location;
 const int nprograms = 5;
@@ -1712,6 +1722,7 @@ void Loadhexagontunnel()
     hexagontunnel_iScale_location = glGetUniformLocation(hexagontunnel_program, "iScale");
     hexagontunnel_iHighScale_location = glGetUniformLocation(hexagontunnel_program, "iHighScale");
     hexagontunnel_iNBeats_location = glGetUniformLocation(hexagontunnel_program, "iNBeats");
+    hexagontunnel_iDial0_location = glGetUniformLocation(hexagontunnel_program, "iDial0");
     hexagontunnel_iResolution_location = glGetUniformLocation(hexagontunnel_program, "iResolution");
     hexagontunnel_iFFT_location = glGetUniformLocation(hexagontunnel_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1753,6 +1764,7 @@ void Loadvoronoinet()
     voronoinet_iScale_location = glGetUniformLocation(voronoinet_program, "iScale");
     voronoinet_iHighScale_location = glGetUniformLocation(voronoinet_program, "iHighScale");
     voronoinet_iNBeats_location = glGetUniformLocation(voronoinet_program, "iNBeats");
+    voronoinet_iDial0_location = glGetUniformLocation(voronoinet_program, "iDial0");
     voronoinet_iResolution_location = glGetUniformLocation(voronoinet_program, "iResolution");
     voronoinet_iFFT_location = glGetUniformLocation(voronoinet_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1791,6 +1803,7 @@ void Loadstartunnel()
     startunnel_iScale_location = glGetUniformLocation(startunnel_program, "iScale");
     startunnel_iHighScale_location = glGetUniformLocation(startunnel_program, "iHighScale");
     startunnel_iNBeats_location = glGetUniformLocation(startunnel_program, "iNBeats");
+    startunnel_iDial0_location = glGetUniformLocation(startunnel_program, "iDial0");
     startunnel_iResolution_location = glGetUniformLocation(startunnel_program, "iResolution");
     startunnel_iFFT_location = glGetUniformLocation(startunnel_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1833,6 +1846,7 @@ void Loadteam210_logo()
     team210_logo_iScale_location = glGetUniformLocation(team210_logo_program, "iScale");
     team210_logo_iHighScale_location = glGetUniformLocation(team210_logo_program, "iHighScale");
     team210_logo_iNBeats_location = glGetUniformLocation(team210_logo_program, "iNBeats");
+    team210_logo_iDial0_location = glGetUniformLocation(team210_logo_program, "iDial0");
     team210_logo_iResolution_location = glGetUniformLocation(team210_logo_program, "iResolution");
     team210_logo_iFFT_location = glGetUniformLocation(team210_logo_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1871,6 +1885,7 @@ void Loadbroccoli()
     broccoli_iScale_location = glGetUniformLocation(broccoli_program, "iScale");
     broccoli_iHighScale_location = glGetUniformLocation(broccoli_program, "iHighScale");
     broccoli_iNBeats_location = glGetUniformLocation(broccoli_program, "iNBeats");
+    broccoli_iDial0_location = glGetUniformLocation(broccoli_program, "iDial0");
     broccoli_iResolution_location = glGetUniformLocation(broccoli_program, "iResolution");
     broccoli_iFFT_location = glGetUniformLocation(broccoli_program, "iFFT");
     progress += .2/(float)nprograms;

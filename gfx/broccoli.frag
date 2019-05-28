@@ -22,6 +22,7 @@ uniform float iFFTWidth;
 uniform float iScale;
 uniform float iHighScale;
 uniform float iNBeats;
+uniform float iDial0;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;
 
@@ -83,7 +84,7 @@ void scene(in vec3 x, out vec2 d)
 {
     d = c.xx;
     
-    x.z -= .01*iTime;
+    x.z -= mix(.01,.1,iDial0)*iTime;
     
     dcubetree((2.)*x-iTime*c.yyx-.1*iTime, .5,  6.-6.*iScale, d.x, mat);
     float d2, m2 = 0.;
