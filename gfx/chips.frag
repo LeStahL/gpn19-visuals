@@ -155,7 +155,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         {
             normal(x,n);
             
-            vec3 ground = vec3(0.58,0.03,0.01);
+            vec3 ground = vec3(0.58,0.13,0.91);
             
             float na, nal;
 			rand(floor(.33*iTime)*c.xx, na);
@@ -163,11 +163,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
             
             float da;
-            lfnoise_edge(11.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx), da);
+            lfnoise_edge(21.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx), da);
             stroke(da, .4, da);
             stroke(da-.1,.2,da);
+            ground = mix(ground, 1.6*ground, step(0.,da));
             stroke(da-.01,.06,da);
-            
             
             ground = mix(ground, .3*ground, step(0.,da));
             
@@ -178,7 +178,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             }
             else if(s.y == 2.)
             {
-                col = mix(ground, vec3(0.91,0.84,0.79), step(.001,x.z));
+                col = mix(ground, 1.6*vec3(0.91,0.84,0.79), step(.001,x.z));
             	col = mix(col, 1.6*vec3(0.95,0.80,0.68), step(.018,x.z));
             }
 			else if(s.y == 3.)
