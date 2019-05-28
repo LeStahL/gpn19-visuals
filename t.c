@@ -291,6 +291,11 @@ void updateBar()
     }
 }
 
+float mix(float a, float b, float t)
+{
+    return (1.-t)*a+t*b;
+}
+
 #include "gfx/symbols.h"
 void draw()
 {
@@ -356,6 +361,9 @@ void draw()
                 {
                     highscale += power_spectrum[j];
                 }
+                
+                if(dial_1_value>0.)scale *= mix(1.,100.,dial_1_value);
+                if(dial_2_value>0.)scale *= mix(1.,.01,dial_2_value);
                 
                 scale = max(scale,0.);
                 scale = min(scale,1.);
