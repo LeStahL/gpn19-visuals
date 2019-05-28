@@ -305,6 +305,7 @@ void draw()
     
     for(int i=0; i<double_buffered+1; ++i)
     {
+        cutoff = (int)mix(96.,256.,dial_3_value);
         if(headers[i].dwFlags & WHDR_DONE)
         {
             // Replace last block in values
@@ -676,6 +677,8 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
             else if(b3lo == 0x6) dial_6_value = (float)b2/(float)0x7F;
             else if(b3lo == 0x7) dial_7_value = (float)b2/(float)0x7F;
         }
+        else if(b3hi == TOPROW)
+            override_index = b3lo + 1;
         
 		break;
 	case MIM_LONGDATA:
