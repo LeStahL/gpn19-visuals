@@ -23,6 +23,25 @@ uniform float iTime;
 uniform sampler2D iChannel0;
 uniform int iEffect;
 
+uniform float iFader0;
+uniform float iFader1;
+uniform float iFader2;
+uniform float iFader3;
+uniform float iFader4;
+uniform float iFader5;
+uniform float iFader6;
+uniform float iFader7;
+
+uniform float iDial0;
+uniform float iDial1;
+uniform float iDial2;
+uniform float iDial3;
+uniform float iDial4;
+uniform float iDial5;
+uniform float iDial6;
+uniform float iDial7;
+
+
 out vec4 gl_FragColor;
 
 const vec3 c = vec3(1.,0.,-1.);
@@ -53,41 +72,41 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec4 col = vec4(0.);
     float bound = sqrt(iFSAA)-1.;
     
-    float delta;
+    float delta = 0.;
     vec2 n;
     
     // Chromatic distortion
-    if(iEffect == 1) 
+    if(iFader0 > 0.) 
     {
-        delta = .02;
+        delta = mix(.0,.02,iFader0);
         rand(floor(20.*fragCoord.y/iResolution.y*c.xx-1337.*floor(12.*iTime)),n.x);
         rand(floor(20.*fragCoord.y/iResolution.y*c.xx-1337.*floor(12.*iTime)+2337.),n.y);
     }
-    else delta = .0;
     
     // HF noise
-    if(iEffect == 2)
+    if(iFader1 > 0.)
     {
         lfnoise(12.*fragCoord-iTime, n.x);
         lfnoise(12.*fragCoord-iTime-1337., n.y);
-        fragCoord += 20.*n;
+        fragCoord += mix(1.,20.,iFader1)*n;
     }
     
     // LF noise
-    else if(iEffect == 3)
+    else if(iFader2 > 0.)
     {
         lfnoise(22.*fragCoord/iResolution-3.*iTime, n.x);
         lfnoise(22.*fragCoord/iResolution-3.*iTime-1337., n.y);
-        fragCoord += 22.*n;
+        fragCoord += mix(0.,22.,iFader2)*n;
     }
     
     // Kaleidoscope
-    else if(iEffect == 4)
+    else if(iFader3 > 0.)
     {
         float a = iResolution.x/iResolution.y;
         vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
-        rand(floor(.33*iTime)*c.xx, n.x);
-        n.x = max(floor(12.*n.x),3.);
+//         rand(floor(.33*iTime)*c.xx, n.x);
+//         n.x = max(floor(12.*n.x),3.);
+        n.x = floor(mix(3.,16.,iFader3));
         float phi = abs(mod(atan(uv.y, uv.x),pi/n.x)-.5*pi/n.x);
         uv = length(uv)*vec2(cos(phi), sin(phi));
         fragCoord = (uv + .5*vec2(a,1.))*iResolution.yy;

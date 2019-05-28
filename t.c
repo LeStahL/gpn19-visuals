@@ -153,7 +153,45 @@ double
     // Scales
     scale,sscale,ssscale,
     highscale,
-    nbeats;
+    nbeats,
+    
+    // MIDI controller values
+    fader_0_value,
+    fader_1_value,
+    fader_2_value,
+    fader_3_value,
+    fader_4_value,
+    fader_5_value,
+    fader_6_value,
+    fader_7_value,
+    fader_0_location,
+    fader_1_location,
+    fader_2_location,
+    fader_3_location,
+    fader_4_location,
+    fader_5_location,
+    fader_6_location,
+    fader_7_location,
+    
+    dial_0_value,
+    dial_1_value,
+    dial_2_value,
+    dial_3_value,
+    dial_4_value,
+    dial_5_value,
+    dial_6_value,
+    dial_7_value,
+    dial_0_location,
+    dial_1_location,
+    dial_2_location,
+    dial_3_location,
+    dial_4_location,
+    dial_5_location,
+    dial_6_location,
+    dial_7_location
+    
+    
+    ;
 int
     // Loading bar
     load_handle,
@@ -405,6 +443,15 @@ void draw()
     glUniform1f(post_time_location, t);
     glUniform1i(post_effect_location, effect);
     
+    glUniform1f(fader_0_location, fader_0_value);
+    glUniform1f(fader_1_location, fader_1_value);
+    glUniform1f(fader_2_location, fader_2_value);
+    glUniform1f(fader_3_location, fader_3_value);
+    glUniform1f(fader_4_location, fader_4_value);
+    glUniform1f(fader_5_location, fader_5_value);
+    glUniform1f(fader_6_location, fader_6_value);
+    glUniform1f(fader_7_location, fader_7_value);
+    
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, first_pass_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -573,6 +620,66 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+#define FADER 0x0
+#define DIAL 0x1
+#define TOPROW 0x2
+#define MIDDLEROW 0x3
+#define BOTTOMROW 0x4
+void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+{
+	switch(wMsg) {
+	case MIM_OPEN:
+		break;
+	case MIM_CLOSE:
+		break;
+	case MIM_DATA:
+        BYTE b1 = (dwParam1 >> 24) & 0xFF,
+            b2 = (dwParam1 >> 16) & 0xFF,
+            b3 = (dwParam1 >> 8) & 0xFF,
+            b4 = dwParam1 & 0xFF;
+        BYTE b3lo = b3 & 0xF,
+            b3hi = (b3 >> 4) & 0xF;
+            
+//         printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x %01x %01x %02x\n", dwParam1, b1, b2, b3hi, b3lo, b4);
+        
+        if(b3hi == FADER)
+        {
+            if(b3lo == 0x0) fader_0_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x1) fader_1_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x2) fader_2_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x3) fader_3_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x4) fader_4_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x5) fader_5_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x6) fader_6_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x7) fader_7_value = (float)b2/(float)0x7F;
+        }
+        else if(b3hi == DIAL)
+        {
+            if(b3lo == 0x0) dial_0_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x1) dial_1_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x2) dial_2_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x3) dial_3_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x4) dial_4_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x5) dial_5_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x6) dial_6_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x7) dial_7_value = (float)b2/(float)0x7F;
+        }
+        
+		break;
+	case MIM_LONGDATA:
+		break;
+	case MIM_ERROR:
+		break;
+	case MIM_LONGERROR:
+		break;
+	case MIM_MOREDATA:
+		break;
+	default:
+		break;
+	}
+	return;
 }
 
 int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
@@ -892,6 +999,22 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     post_resolution_location = glGetUniformLocation(post_program, VAR_IRESOLUTION);
     post_time_location = glGetUniformLocation(post_program, VAR_ITIME);
     post_effect_location = glGetUniformLocation(post_program, VAR_IEFFECT);
+    fader_0_location = glGetUniformLocation(post_program, "iFader0");
+    fader_1_location = glGetUniformLocation(post_program, "iFader1");
+    fader_2_location = glGetUniformLocation(post_program, "iFader2");
+    fader_3_location = glGetUniformLocation(post_program, "iFader3");
+    fader_4_location = glGetUniformLocation(post_program, "iFader4");
+    fader_5_location = glGetUniformLocation(post_program, "iFader5");
+    fader_6_location = glGetUniformLocation(post_program, "iFader6");
+    fader_7_location = glGetUniformLocation(post_program, "iFader7");
+    dial_0_location = glGetUniformLocation(post_program, "iDial0");
+    dial_1_location = glGetUniformLocation(post_program, "iDial1");
+    dial_2_location = glGetUniformLocation(post_program, "iDial2");
+    dial_3_location = glGetUniformLocation(post_program, "iDial3");
+    dial_4_location = glGetUniformLocation(post_program, "iDial4");
+    dial_5_location = glGetUniformLocation(post_program, "iDial5");
+    dial_6_location = glGetUniformLocation(post_program, "iDial6");
+    dial_7_location = glGetUniformLocation(post_program, "iDial7");
     printf("++++ Post shader created.\n");
     
     // Create framebuffer for rendering first pass to
@@ -969,7 +1092,32 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    
+    // Setup MIDI controller
+    HMIDIIN hMidiDevice = NULL;;
+	DWORD nMidiPort = 0;
+	UINT nMidiDeviceNum;
+	MMRESULT rv;
+	MIDIINCAPS caps;
 
+	nMidiDeviceNum = midiInGetNumDevs();
+	if(nMidiDeviceNum == 0) 
+    {
+        printf("No MIDI devices connected.\n");
+    }
+    else
+    {
+        printf("Available MIDI devices:\n");
+        for (unsigned int i = 0; i < nMidiDeviceNum; ++i) 
+        {
+            midiInGetDevCaps(i, &caps, sizeof(MIDIINCAPS));
+            printf("->%d: %s\n", i, caps.szPname);
+        }
+    }
+    
+    rv = midiInOpen(&hMidiDevice, nMidiPort, (DWORD)(void*)MidiInProc, 0, CALLBACK_FUNCTION);
+    midiInStart(hMidiDevice);
+    
     // Main loop
     t_start = (double)milliseconds_now()*1.e-3;
     while(1)
