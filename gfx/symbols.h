@@ -324,6 +324,7 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -477,6 +478,7 @@ const char *voronoinet_source = "/* Corfield Imitation 1\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -688,6 +690,7 @@ const char *startunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 a
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -849,6 +852,7 @@ const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -1129,6 +1133,7 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
 "\n"
@@ -1318,6 +1323,221 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "    col += dd*.1*c.xxx;\n"
 "    \n"
 "    col = mix(col, c1, clamp(float(i)/float(N),0.,1.));\n"
+"    \n"
+"    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
+const char *chips_source = "/* Corfield Imitation 1\n"
+" * Copyright (C) 2019  Alexander Kraus <nr4@z10.info>\n"
+" * \n"
+" * This program is free software: you can redistribute it and/or modify\n"
+" * it under the terms of the GNU General Public License as published by\n"
+" * the Free Software Foundation, either version 3 of the License, or\n"
+" * (at your option) any later version.\n"
+" * \n"
+" * This program is distributed in the hope that it will be useful,\n"
+" * but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+" * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+" * GNU General Public License for more details.\n"
+" * \n"
+" * You should have received a copy of the GNU General Public License\n"
+" * along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
+" */\n"
+" \n"
+" #version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform float iDial0;\n"
+"uniform float iDial7;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"void rand(in vec2 x, out float num);\n"
+"void lfnoise_edge(in vec2 t, out float n)\n"
+"{\n"
+"    vec2 i = floor(t);\n"
+"    t = fract(t);\n"
+"    //t = smoothstep(c.yy, c.xx, t);\n"
+"    t = smoothstep(.4*c.xx,.6*c.xx, t);\n"
+"    vec2 v1, v2;\n"
+"    rand(i, v1.x);\n"
+"    rand(i+c.xy, v1.y);\n"
+"    rand(i+c.yx, v2.x);\n"
+"    rand(i+c.xx, v2.y);\n"
+"    v1 = c.zz+2.*mix(v1, v2, t.y);\n"
+"    n = mix(v1.x, v1.y, t.x);\n"
+"}\n"
+"\n"
+"void zextrude(in float z, in float d2d, in float h, out float d);\n"
+"void stroke(in float d0, in float s, out float d);\n"
+"void smoothmin(in float a, in float b, in float k, out float dst);\n"
+"void dvoronoi(in vec2 x, out float d, out vec2 z);\n"
+"void rot3(in vec3 p, out mat3 rot);\n"
+"\n"
+"float mat;\n"
+"void scene(in vec3 x, out vec2 d)\n"
+"{\n"
+"	x.y += .1*mix(1.,5.,iDial0)*iTime;\n"
+"    \n"
+"    d = c.xx;\n"
+"    d.x = x.z;\n"
+"    \n"
+"	vec3 n;\n"
+"    lfnoise_edge(34.*x.xy, n.x);\n"
+"    lfnoise_edge(14.*x.xy+1337., n.y);\n"
+"    lfnoise_edge(54.*x.xy+2337., n.z);\n"
+"    \n"
+"    float da;\n"
+"    stroke(2.*n.x-3.*n.y-n.z, .02, da);\n"
+"    \n"
+"    zextrude(x.z, -da, .02, da);\n"
+"    stroke(da, mix(.01,.05,iScale), da);\n"
+"    stroke(da,mix(.1,.5,iScale),da);\n"
+"    smoothmin(d.x, da, .7, d.x);\n"
+"    \n"
+"    lfnoise_edge(34.*x.xy+3337.1, n.x);\n"
+"    lfnoise_edge(14.*x.xy+4337.2, n.y);\n"
+"    lfnoise_edge(54.*x.xy+5337.3, n.z);\n"
+"    \n"
+"    stroke(-2.*n.x+2.*n.y+n.z, .02, da);\n"
+"    \n"
+"    zextrude(x.z, -da, .02*n.x, da);\n"
+"    stroke(da,mix(.2,.8,iScale),da);\n"
+"    \n"
+"    d = mix(d, vec2(da, 2.), step(da,d.x));\n"
+"    \n"
+"    d.x = max(d.x, x.z-.1+.02*n.z);\n"
+"    \n"
+"    vec2 ind,ia;\n"
+"    dvoronoi(12.*x.xy, da, ind);\n"
+"    vec2 y = x.xy-ind/12.;\n"
+"    float r;\n"
+"    rand(ind, r);\n"
+"    r = length(y)-.02*r;\n"
+"    \n"
+"    d = mix(d,vec2(r,3.), step(r,d.x));\n"
+"}\n"
+"\n"
+"// Normal\n"
+"const float dx = 5.e-4;\n"
+"void normal(in vec3 x, out vec3 n);\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    // Set up coordinates\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
+"    vec3 col = c.yyy;\n"
+"    \n"
+"    if(length(uv) > .5)\n"
+"    {\n"
+"        fragColor = vec4(col, 0.);\n"
+"        return;\n"
+"    }\n"
+"    \n"
+"    uv *= mix(1.,.1,iDial7);\n"
+"    \n"
+"    // Camera setup\n"
+"    float pp = .3*iTime;\n"
+"    vec3 o = c.yyx,\n"
+"        t = c.yyy,\n"
+"        dir = normalize(t-o),\n"
+"        r = normalize(c.xyy),\n"
+"        u = normalize(cross(r,dir)),\n"
+"        n,\n"
+"        x,\n"
+"        l;\n"
+"    t += uv.x*r + uv.y*u;\n"
+"    dir = normalize(t-o);\n"
+"    vec2 s;\n"
+"    float d = -(o.z-.03)/dir.z;\n"
+"    int N = 850,\n"
+"        i;\n"
+"    \n"
+"    // Graph\n"
+"    x = o + d * dir;\n"
+"    \n"
+"    // Actual Scene\n"
+"    {\n"
+"\n"
+"        // Raymarching\n"
+"        for(i=0; i<N; ++i)\n"
+"        {\n"
+"            x = o + d * dir;\n"
+"            scene(x,s);\n"
+"            if(s.x < 1.e-4) break;\n"
+"            d += min(s.x,.005);\n"
+"        }\n"
+"\n"
+"        // Illumination\n"
+"        l = normalize(x+c.yxx);\n"
+"        if(i<N)\n"
+"        {\n"
+"            normal(x,n);\n"
+"            \n"
+"            vec3 ground = vec3(0.58,0.03,0.01);\n"
+"            \n"
+"            float na, nal;\n"
+"			rand(floor(.33*iTime)*c.xx, na);\n"
+"            rand(floor(.33*iTime)*c.xx+1., nal);\n"
+"            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
+"            \n"
+"            float da;\n"
+"            lfnoise_edge(11.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx), da);\n"
+"            stroke(da, .4, da);\n"
+"            stroke(da-.1,.2,da);\n"
+"            stroke(da-.01,.06,da);\n"
+"            \n"
+"            \n"
+"            ground = mix(ground, .3*ground, step(0.,da));\n"
+"            \n"
+"            if(s.y == 1.)\n"
+"            {\n"
+"            	col = mix(ground, vec3(0.82,0.71,0.50), step(.002,x.z));\n"
+"            	col = mix(col, 1.6*vec3(0.14,0.14,0.12), step(.018,x.z));\n"
+"            }\n"
+"            else if(s.y == 2.)\n"
+"            {\n"
+"                col = mix(ground, vec3(0.91,0.84,0.79), step(.001,x.z));\n"
+"            	col = mix(col, 1.6*vec3(0.95,0.80,0.68), step(.018,x.z));\n"
+"            }\n"
+"			else if(s.y == 3.)\n"
+"            {\n"
+"                col = mix(ground, vec3(0.71,0.00,0.17), step(.001,x.z));\n"
+"            	col = mix(col, 1.6*vec3(0.88,0.77,0.99), step(.018,x.z));\n"
+"            }\n"
+"            mat3 RR;\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);\n"
+"\n"
+"            col = mix(col,.3*abs(RR*col),.5+.5*sin(1.*length(x.xy)+length(col)));\n"
+"            col = mix(col,abs(RR*col),.5+.5*cos(21.*x.z+length(col)));\n"
+"        }\n"
+"    }\n"
+"    \n"
+"    // Colorize\n"
+"    col = .2*col\n"
+"        + 1.3*col*abs(dot(l,n))\n"
+"        +.4*col*abs(pow(dot(reflect(-l,n),dir),3.));\n"
+"    \n"
+"    float dd;\n"
+"    rand(1200.*uv, dd);\n"
+"    col += dd*.1*c.xxx;\n"
+"    \n"
+"    col = mix(col, length(col)*c.xxx/sqrt(3.), .5);\n"
 "    \n"
 "    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
 "}\n"
@@ -1646,13 +1866,14 @@ void LoadSymbols()
     Loadrand3();
     updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
 hexagontunnel_iHighScale_location;
 hexagontunnel_iNBeats_location;
 hexagontunnel_iDial0_location;
+hexagontunnel_iDial7_location;
 hexagontunnel_iResolution_location;
 hexagontunnel_iFFT_location;
 int voronoinet_iTime_location;
@@ -1661,6 +1882,7 @@ voronoinet_iScale_location;
 voronoinet_iHighScale_location;
 voronoinet_iNBeats_location;
 voronoinet_iDial0_location;
+voronoinet_iDial7_location;
 voronoinet_iResolution_location;
 voronoinet_iFFT_location;
 int startunnel_iTime_location;
@@ -1669,6 +1891,7 @@ startunnel_iScale_location;
 startunnel_iHighScale_location;
 startunnel_iNBeats_location;
 startunnel_iDial0_location;
+startunnel_iDial7_location;
 startunnel_iResolution_location;
 startunnel_iFFT_location;
 int team210_logo_iTime_location;
@@ -1677,6 +1900,7 @@ team210_logo_iScale_location;
 team210_logo_iHighScale_location;
 team210_logo_iNBeats_location;
 team210_logo_iDial0_location;
+team210_logo_iDial7_location;
 team210_logo_iResolution_location;
 team210_logo_iFFT_location;
 int broccoli_iTime_location;
@@ -1685,9 +1909,19 @@ broccoli_iScale_location;
 broccoli_iHighScale_location;
 broccoli_iNBeats_location;
 broccoli_iDial0_location;
+broccoli_iDial7_location;
 broccoli_iResolution_location;
 broccoli_iFFT_location;
-const int nprograms = 5;
+int chips_iTime_location;
+chips_iFFTWidth_location;
+chips_iScale_location;
+chips_iHighScale_location;
+chips_iNBeats_location;
+chips_iDial0_location;
+chips_iDial7_location;
+chips_iResolution_location;
+chips_iFFT_location;
+const int nprograms = 6;
 
 void Loadhexagontunnel()
 {
@@ -1723,6 +1957,7 @@ void Loadhexagontunnel()
     hexagontunnel_iHighScale_location = glGetUniformLocation(hexagontunnel_program, "iHighScale");
     hexagontunnel_iNBeats_location = glGetUniformLocation(hexagontunnel_program, "iNBeats");
     hexagontunnel_iDial0_location = glGetUniformLocation(hexagontunnel_program, "iDial0");
+    hexagontunnel_iDial7_location = glGetUniformLocation(hexagontunnel_program, "iDial7");
     hexagontunnel_iResolution_location = glGetUniformLocation(hexagontunnel_program, "iResolution");
     hexagontunnel_iFFT_location = glGetUniformLocation(hexagontunnel_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1765,6 +2000,7 @@ void Loadvoronoinet()
     voronoinet_iHighScale_location = glGetUniformLocation(voronoinet_program, "iHighScale");
     voronoinet_iNBeats_location = glGetUniformLocation(voronoinet_program, "iNBeats");
     voronoinet_iDial0_location = glGetUniformLocation(voronoinet_program, "iDial0");
+    voronoinet_iDial7_location = glGetUniformLocation(voronoinet_program, "iDial7");
     voronoinet_iResolution_location = glGetUniformLocation(voronoinet_program, "iResolution");
     voronoinet_iFFT_location = glGetUniformLocation(voronoinet_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1804,6 +2040,7 @@ void Loadstartunnel()
     startunnel_iHighScale_location = glGetUniformLocation(startunnel_program, "iHighScale");
     startunnel_iNBeats_location = glGetUniformLocation(startunnel_program, "iNBeats");
     startunnel_iDial0_location = glGetUniformLocation(startunnel_program, "iDial0");
+    startunnel_iDial7_location = glGetUniformLocation(startunnel_program, "iDial7");
     startunnel_iResolution_location = glGetUniformLocation(startunnel_program, "iResolution");
     startunnel_iFFT_location = glGetUniformLocation(startunnel_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1847,6 +2084,7 @@ void Loadteam210_logo()
     team210_logo_iHighScale_location = glGetUniformLocation(team210_logo_program, "iHighScale");
     team210_logo_iNBeats_location = glGetUniformLocation(team210_logo_program, "iNBeats");
     team210_logo_iDial0_location = glGetUniformLocation(team210_logo_program, "iDial0");
+    team210_logo_iDial7_location = glGetUniformLocation(team210_logo_program, "iDial7");
     team210_logo_iResolution_location = glGetUniformLocation(team210_logo_program, "iResolution");
     team210_logo_iFFT_location = glGetUniformLocation(team210_logo_program, "iFFT");
     progress += .2/(float)nprograms;
@@ -1886,8 +2124,48 @@ void Loadbroccoli()
     broccoli_iHighScale_location = glGetUniformLocation(broccoli_program, "iHighScale");
     broccoli_iNBeats_location = glGetUniformLocation(broccoli_program, "iNBeats");
     broccoli_iDial0_location = glGetUniformLocation(broccoli_program, "iDial0");
+    broccoli_iDial7_location = glGetUniformLocation(broccoli_program, "iDial7");
     broccoli_iResolution_location = glGetUniformLocation(broccoli_program, "iResolution");
     broccoli_iFFT_location = glGetUniformLocation(broccoli_program, "iFFT");
+    progress += .2/(float)nprograms;
+}
+
+void Loadchips()
+{
+    int chips_size = strlen(chips_source);
+    chips_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(chips_handle, 1, (GLchar **)&chips_source, &chips_size);
+    glCompileShader(chips_handle);
+#ifdef DEBUG
+    printf("---> chips Shader:\n");
+    debug(chips_handle);
+    printf(">>>>\n");
+#endif
+    chips_program = glCreateProgram();
+    glAttachShader(chips_program,chips_handle);
+    glAttachShader(chips_program,rand_handle);
+    glAttachShader(chips_program,zextrude_handle);
+    glAttachShader(chips_program,stroke_handle);
+    glAttachShader(chips_program,smoothmin_handle);
+    glAttachShader(chips_program,dvoronoi_handle);
+    glAttachShader(chips_program,rot3_handle);
+    glAttachShader(chips_program,normal_handle);
+    glLinkProgram(chips_program);
+#ifdef DEBUG
+    printf("---> chips Program:\n");
+    debugp(chips_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(chips_program);
+    chips_iTime_location = glGetUniformLocation(chips_program, "iTime");
+    chips_iFFTWidth_location = glGetUniformLocation(chips_program, "iFFTWidth");
+    chips_iScale_location = glGetUniformLocation(chips_program, "iScale");
+    chips_iHighScale_location = glGetUniformLocation(chips_program, "iHighScale");
+    chips_iNBeats_location = glGetUniformLocation(chips_program, "iNBeats");
+    chips_iDial0_location = glGetUniformLocation(chips_program, "iDial0");
+    chips_iDial7_location = glGetUniformLocation(chips_program, "iDial7");
+    chips_iResolution_location = glGetUniformLocation(chips_program, "iResolution");
+    chips_iFFT_location = glGetUniformLocation(chips_program, "iFFT");
     progress += .2/(float)nprograms;
 }
 
@@ -1902,6 +2180,8 @@ void LoadPrograms()
     Loadteam210_logo();
     updateBar();
     Loadbroccoli();
+    updateBar();
+    Loadchips();
     updateBar();
 }
 #endif

@@ -42,7 +42,7 @@ if(WIN32)
     
     add_custom_target(symbolization
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/gfx/
-        COMMAND python symbolize.py hexagontunnel.frag voronoinet.frag startunnel.frag team210_logo.frag broccoli.frag -o symbols.h
+        COMMAND python symbolize.py hexagontunnel.frag voronoinet.frag startunnel.frag team210_logo.frag broccoli.frag chips.frag -o symbols.h
     )
     
     add_subdirectory(thirdparty/fftw-3.3.8)
