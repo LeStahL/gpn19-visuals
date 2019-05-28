@@ -47,6 +47,7 @@ void lfnoise_edge(in vec2 t, out float n)
     v1 = c.zz+2.*mix(v1, v2, t.y);
     n = mix(v1.x, v1.y, t.x);
 }
+void lfnoise(in vec2 t, out float n);
 
 void zextrude(in float z, in float d2d, in float h, out float d);
 void stroke(in float d0, in float s, out float d);
@@ -163,13 +164,21 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
             
             float da;
-            lfnoise_edge(21.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx), da);
-            stroke(da, .4, da);
-            stroke(da-.1,.2,da);
-            ground = mix(ground, 1.6*ground, step(0.,da));
-            stroke(da-.01,.06,da);
-            
+            vec3 n;
+            lfnoise_edge(34.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx)+9335., n.x);
+            lfnoise_edge(14.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx)+132., n.y);
+            lfnoise_edge(54.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx)+2231., n.z);
+            float dra;
+//             lfnoise(84.*(x.xy-.3*mix(1.,5.,iDial0)*iTime*c.yx), dra);
+            lfnoise_edge(34.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx)+9335.+.01*n.x, n.x);
+            lfnoise_edge(14.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx)+132.+.01*n.y, n.y);
+            lfnoise_edge(54.*(x.xy+.1*mix(1.,5.,iDial0)*iTime*c.yx)+2231.+.01*n.z, n.z);
+            stroke(2.*n.x-3.*n.y-n.z, .4, da);
+            stroke(da-.5,.12,da);
             ground = mix(ground, .3*ground, step(0.,da));
+            stroke(da-.25,.06,da);
+            ground = mix(ground, mix(1.5,5.6,iDial0)*ground, step(0.,da));
+            
             
             if(s.y == 1.)
             {
@@ -183,7 +192,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             }
 			else if(s.y == 3.)
             {
-                col = mix(ground, vec3(0.71,0.00,0.17), step(.001,x.z));
+                col = mix(ground, vec3(0.91,0.84,0.79), step(.001,x.z));
             	col = mix(col, 1.6*vec3(0.88,0.77,0.99), step(.018,x.z));
             }
             mat3 RR;
@@ -203,7 +212,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     rand(1200.*uv, dd);
     col += dd*.1*c.xxx;
     
-    col = mix(col, length(col)*c.xxx/sqrt(3.), .5);
+    col = mix(col, length(col)*c.xxx/sqrt(3.), .85);
     
     fragColor = clamp(vec4(col,1.0),0.,1.);
 }
