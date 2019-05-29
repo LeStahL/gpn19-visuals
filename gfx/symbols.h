@@ -324,6 +324,7 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -478,6 +479,7 @@ const char *voronoinet_source = "/* Corfield Imitation 1\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -690,6 +692,7 @@ const char *startunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 a
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -852,6 +855,7 @@ const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -1133,6 +1137,7 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -1357,6 +1362,7 @@ const char *chips_source = "/* Corfield Imitation 1\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -1581,6 +1587,7 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "uniform float iHighScale;\n"
 "uniform float iNBeats;\n"
 "uniform float iDial0;\n"
+"uniform float iDial6;\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
@@ -1649,6 +1656,7 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "    d = c.xx;\n"
 "    \n"
 "    x.y -= .1*iTime;\n"
+"    x.x += mix(0.,10., iDial6);\n"
 "    \n"
 "    vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);\n"
 "    float time = 0.;\n"
@@ -1724,8 +1732,8 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "    \n"
 "    L1 = 2.+.1*mix(0.,1.,iScale)*na.x;\n"
 "    L2 = 1.+.1*mix(0.,1.,iScale)*na.z;\n"
-"    \n"
-"    \n"
+"//     h = mix(1.e-1,1., iDial7);\n"
+"    tmax = mix(1.,4., iDial7);\n"
 "    uv /= mix(.5,8.,iDial0);\n"
 "    \n"
 "     // Camera setup\n"
@@ -1764,20 +1772,20 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "        l = normalize(x+c.yxx);\n"
 "        if(i<N)\n"
 "        {\n"
-"            vec4 state = vec4((x.xy-.1*iTime*c.yx)*2.*pi-vec2(pi,pi), 0, 0);\n"
+"            vec4 state = vec4((x.xy-.1*iTime*c.yx+mix(0.,10., iDial6)*c.xy)*2.*pi-vec2(pi,pi), 0, 0);\n"
 "            float time = 0.;\n"
 "            while(time < tmax) \n"
 "            {\n"
 "                state = step_rk4(state);\n"
 "                time += h;\n"
 "            }\n"
-"            float da = -.02 - mix(.01,.02,iScale)*log(abs(state.r/state.b));\n"
+"            float da = -.02 - mix(.01,.03,iScale)*log(abs(state.r/state.b));\n"
 "            d += da;\n"
 "            x = o + d * dir;\n"
 "            normal(x,n);\n"
-"            color(abs(x.z)*4., col);\n"
+"            color(abs(x.z-.1)*1., col);\n"
 "            vec3 c1 = c.yyy;\n"
-"            color2(abs(x.z)*4., c1);\n"
+"            color2(abs(x.z-.1)*1., c1);\n"
 "            \n"
 "            col = mix(col, c1, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, abs(da)-.1));\n"
 "            \n"
@@ -2136,6 +2144,7 @@ hexagontunnel_iScale_location;
 hexagontunnel_iHighScale_location;
 hexagontunnel_iNBeats_location;
 hexagontunnel_iDial0_location;
+hexagontunnel_iDial6_location;
 hexagontunnel_iDial7_location;
 hexagontunnel_iResolution_location;
 hexagontunnel_iFFT_location;
@@ -2145,6 +2154,7 @@ voronoinet_iScale_location;
 voronoinet_iHighScale_location;
 voronoinet_iNBeats_location;
 voronoinet_iDial0_location;
+voronoinet_iDial6_location;
 voronoinet_iDial7_location;
 voronoinet_iResolution_location;
 voronoinet_iFFT_location;
@@ -2154,6 +2164,7 @@ startunnel_iScale_location;
 startunnel_iHighScale_location;
 startunnel_iNBeats_location;
 startunnel_iDial0_location;
+startunnel_iDial6_location;
 startunnel_iDial7_location;
 startunnel_iResolution_location;
 startunnel_iFFT_location;
@@ -2163,6 +2174,7 @@ team210_logo_iScale_location;
 team210_logo_iHighScale_location;
 team210_logo_iNBeats_location;
 team210_logo_iDial0_location;
+team210_logo_iDial6_location;
 team210_logo_iDial7_location;
 team210_logo_iResolution_location;
 team210_logo_iFFT_location;
@@ -2172,6 +2184,7 @@ broccoli_iScale_location;
 broccoli_iHighScale_location;
 broccoli_iNBeats_location;
 broccoli_iDial0_location;
+broccoli_iDial6_location;
 broccoli_iDial7_location;
 broccoli_iResolution_location;
 broccoli_iFFT_location;
@@ -2181,6 +2194,7 @@ chips_iScale_location;
 chips_iHighScale_location;
 chips_iNBeats_location;
 chips_iDial0_location;
+chips_iDial6_location;
 chips_iDial7_location;
 chips_iResolution_location;
 chips_iFFT_location;
@@ -2190,6 +2204,7 @@ doublependulum_iScale_location;
 doublependulum_iHighScale_location;
 doublependulum_iNBeats_location;
 doublependulum_iDial0_location;
+doublependulum_iDial6_location;
 doublependulum_iDial7_location;
 doublependulum_iResolution_location;
 doublependulum_iFFT_location;
@@ -2229,6 +2244,7 @@ void Loadhexagontunnel()
     hexagontunnel_iHighScale_location = glGetUniformLocation(hexagontunnel_program, "iHighScale");
     hexagontunnel_iNBeats_location = glGetUniformLocation(hexagontunnel_program, "iNBeats");
     hexagontunnel_iDial0_location = glGetUniformLocation(hexagontunnel_program, "iDial0");
+    hexagontunnel_iDial6_location = glGetUniformLocation(hexagontunnel_program, "iDial6");
     hexagontunnel_iDial7_location = glGetUniformLocation(hexagontunnel_program, "iDial7");
     hexagontunnel_iResolution_location = glGetUniformLocation(hexagontunnel_program, "iResolution");
     hexagontunnel_iFFT_location = glGetUniformLocation(hexagontunnel_program, "iFFT");
@@ -2272,6 +2288,7 @@ void Loadvoronoinet()
     voronoinet_iHighScale_location = glGetUniformLocation(voronoinet_program, "iHighScale");
     voronoinet_iNBeats_location = glGetUniformLocation(voronoinet_program, "iNBeats");
     voronoinet_iDial0_location = glGetUniformLocation(voronoinet_program, "iDial0");
+    voronoinet_iDial6_location = glGetUniformLocation(voronoinet_program, "iDial6");
     voronoinet_iDial7_location = glGetUniformLocation(voronoinet_program, "iDial7");
     voronoinet_iResolution_location = glGetUniformLocation(voronoinet_program, "iResolution");
     voronoinet_iFFT_location = glGetUniformLocation(voronoinet_program, "iFFT");
@@ -2312,6 +2329,7 @@ void Loadstartunnel()
     startunnel_iHighScale_location = glGetUniformLocation(startunnel_program, "iHighScale");
     startunnel_iNBeats_location = glGetUniformLocation(startunnel_program, "iNBeats");
     startunnel_iDial0_location = glGetUniformLocation(startunnel_program, "iDial0");
+    startunnel_iDial6_location = glGetUniformLocation(startunnel_program, "iDial6");
     startunnel_iDial7_location = glGetUniformLocation(startunnel_program, "iDial7");
     startunnel_iResolution_location = glGetUniformLocation(startunnel_program, "iResolution");
     startunnel_iFFT_location = glGetUniformLocation(startunnel_program, "iFFT");
@@ -2356,6 +2374,7 @@ void Loadteam210_logo()
     team210_logo_iHighScale_location = glGetUniformLocation(team210_logo_program, "iHighScale");
     team210_logo_iNBeats_location = glGetUniformLocation(team210_logo_program, "iNBeats");
     team210_logo_iDial0_location = glGetUniformLocation(team210_logo_program, "iDial0");
+    team210_logo_iDial6_location = glGetUniformLocation(team210_logo_program, "iDial6");
     team210_logo_iDial7_location = glGetUniformLocation(team210_logo_program, "iDial7");
     team210_logo_iResolution_location = glGetUniformLocation(team210_logo_program, "iResolution");
     team210_logo_iFFT_location = glGetUniformLocation(team210_logo_program, "iFFT");
@@ -2396,6 +2415,7 @@ void Loadbroccoli()
     broccoli_iHighScale_location = glGetUniformLocation(broccoli_program, "iHighScale");
     broccoli_iNBeats_location = glGetUniformLocation(broccoli_program, "iNBeats");
     broccoli_iDial0_location = glGetUniformLocation(broccoli_program, "iDial0");
+    broccoli_iDial6_location = glGetUniformLocation(broccoli_program, "iDial6");
     broccoli_iDial7_location = glGetUniformLocation(broccoli_program, "iDial7");
     broccoli_iResolution_location = glGetUniformLocation(broccoli_program, "iResolution");
     broccoli_iFFT_location = glGetUniformLocation(broccoli_program, "iFFT");
@@ -2436,6 +2456,7 @@ void Loadchips()
     chips_iHighScale_location = glGetUniformLocation(chips_program, "iHighScale");
     chips_iNBeats_location = glGetUniformLocation(chips_program, "iNBeats");
     chips_iDial0_location = glGetUniformLocation(chips_program, "iDial0");
+    chips_iDial6_location = glGetUniformLocation(chips_program, "iDial6");
     chips_iDial7_location = glGetUniformLocation(chips_program, "iDial7");
     chips_iResolution_location = glGetUniformLocation(chips_program, "iResolution");
     chips_iFFT_location = glGetUniformLocation(chips_program, "iFFT");
@@ -2473,6 +2494,7 @@ void Loaddoublependulum()
     doublependulum_iHighScale_location = glGetUniformLocation(doublependulum_program, "iHighScale");
     doublependulum_iNBeats_location = glGetUniformLocation(doublependulum_program, "iNBeats");
     doublependulum_iDial0_location = glGetUniformLocation(doublependulum_program, "iDial0");
+    doublependulum_iDial6_location = glGetUniformLocation(doublependulum_program, "iDial6");
     doublependulum_iDial7_location = glGetUniformLocation(doublependulum_program, "iDial7");
     doublependulum_iResolution_location = glGetUniformLocation(doublependulum_program, "iResolution");
     doublependulum_iFFT_location = glGetUniformLocation(doublependulum_program, "iFFT");

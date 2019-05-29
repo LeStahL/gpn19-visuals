@@ -23,6 +23,7 @@ uniform float iScale;
 uniform float iHighScale;
 uniform float iNBeats;
 uniform float iDial0;
+uniform float iDial6;
 uniform float iDial7;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;

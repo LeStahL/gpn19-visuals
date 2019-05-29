@@ -401,6 +401,7 @@ void draw()
         glUniform1f(hexagontunnel_iNBeats_location, nbeats);
         glUniform1f(hexagontunnel_iHighScale_location, highscale);
         glUniform1f(hexagontunnel_iDial0_location, dial_0_value);
+        glUniform1f(hexagontunnel_iDial6_location, dial_6_value);
         glUniform1f(hexagontunnel_iDial7_location, dial_7_value);
     }
     else if(override_index == 2)
@@ -411,6 +412,8 @@ void draw()
         glUniform1f(voronoinet_iScale_location, scale);
         glUniform1f(voronoinet_iNBeats_location, nbeats);
         glUniform1f(voronoinet_iHighScale_location, highscale);
+        glUniform1f(voronoinet_iDial0_location, dial_0_value);
+        glUniform1f(voronoinet_iDial6_location, dial_6_value);
         glUniform1f(voronoinet_iDial7_location, dial_7_value);
     }
     else if(override_index == 3)
@@ -421,6 +424,8 @@ void draw()
         glUniform1f(startunnel_iScale_location, scale);
         glUniform1f(startunnel_iNBeats_location, nbeats);
         glUniform1f(startunnel_iHighScale_location, highscale);
+        glUniform1f(startunnel_iDial0_location, dial_0_value);
+        glUniform1f(startunnel_iDial6_location, dial_6_value);
         glUniform1f(startunnel_iDial7_location, dial_7_value);
     }
     else if(override_index == 4)
@@ -431,6 +436,8 @@ void draw()
         glUniform1f(team210_logo_iScale_location, scale);
         glUniform1f(team210_logo_iNBeats_location, nbeats);
         glUniform1f(team210_logo_iHighScale_location, highscale);
+        glUniform1f(team210_logo_iDial0_location, dial_0_value);
+        glUniform1f(team210_logo_iDial6_location, dial_6_value);
         glUniform1f(team210_logo_iDial7_location, dial_7_value);
     }
     else if(override_index == 5)
@@ -442,6 +449,7 @@ void draw()
         glUniform1f(broccoli_iNBeats_location, nbeats);
         glUniform1f(broccoli_iHighScale_location, highscale);
         glUniform1f(broccoli_iDial0_location, dial_0_value);
+        glUniform1f(broccoli_iDial6_location, dial_6_value);
         glUniform1f(broccoli_iDial7_location, dial_7_value);
     }
     else if(override_index == 6)
@@ -453,6 +461,7 @@ void draw()
         glUniform1f(chips_iNBeats_location, nbeats);
         glUniform1f(chips_iHighScale_location, highscale);
         glUniform1f(chips_iDial0_location, dial_0_value);
+        glUniform1f(chips_iDial6_location, dial_6_value);
         glUniform1f(chips_iDial7_location, dial_7_value);
     }
     else if(override_index == 7)
@@ -464,6 +473,7 @@ void draw()
         glUniform1f(doublependulum_iNBeats_location, nbeats);
         glUniform1f(doublependulum_iHighScale_location, highscale);
         glUniform1f(doublependulum_iDial0_location, dial_0_value);
+        glUniform1f(doublependulum_iDial6_location, dial_6_value);
         glUniform1f(doublependulum_iDial7_location, dial_7_value);
     }
     
@@ -710,6 +720,8 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
                 override_index = b3lo + 1;
             else if(b3lo == 0xB)
                 t_start = (double)milliseconds_now()*1.e-3;
+            else if(b3lo == 0xC)
+                t_start -= 1.e6;
             else if(b3lo == 0x9)
             {
                 if(b2 == 0x7F)
@@ -736,6 +748,16 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
                     scale_override = 0;
                     scale = .0;
                 }
+            }
+            else if(b3lo == 0xA)
+            {
+                if(b2 == 0x7F)
+                    override_index = max(override_index-1, 1);
+            }
+            else if(b3lo == 0xB)
+            {
+                if(b2 == 0x7F)
+                    override_index += 1;
             }
         }
         

@@ -23,6 +23,7 @@ uniform float iScale;
 uniform float iHighScale;
 uniform float iNBeats;
 uniform float iDial0;
+uniform float iDial6;
 uniform float iDial7;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;
@@ -91,6 +92,7 @@ void scene(in vec3 x, out vec2 d)
     d = c.xx;
     
     x.y -= .1*iTime;
+    x.x += mix(0.,10., iDial6);
     
     vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);
     float time = 0.;
@@ -166,8 +168,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     
     L1 = 2.+.1*mix(0.,1.,iScale)*na.x;
     L2 = 1.+.1*mix(0.,1.,iScale)*na.z;
-    
-    
+//     h = mix(1.e-1,1., iDial7);
+    tmax = mix(1.,4., iDial7);
     uv /= mix(.5,8.,iDial0);
     
      // Camera setup
@@ -206,20 +208,20 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         l = normalize(x+c.yxx);
         if(i<N)
         {
-            vec4 state = vec4((x.xy-.1*iTime*c.yx)*2.*pi-vec2(pi,pi), 0, 0);
+            vec4 state = vec4((x.xy-.1*iTime*c.yx+mix(0.,10., iDial6)*c.xy)*2.*pi-vec2(pi,pi), 0, 0);
             float time = 0.;
             while(time < tmax) 
             {
                 state = step_rk4(state);
                 time += h;
             }
-            float da = -.02 - mix(.01,.02,iScale)*log(abs(state.r/state.b));
+            float da = -.02 - mix(.01,.03,iScale)*log(abs(state.r/state.b));
             d += da;
             x = o + d * dir;
             normal(x,n);
-            color(abs(x.z)*4., col);
+            color(abs(x.z-.1)*1., col);
             vec3 c1 = c.yyy;
-            color2(abs(x.z)*4., c1);
+            color2(abs(x.z-.1)*1., c1);
             
             col = mix(col, c1, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, abs(da)-.1));
             
