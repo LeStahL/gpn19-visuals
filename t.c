@@ -710,6 +710,33 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
                 override_index = b3lo + 1;
             else if(b3lo == 0xB)
                 t_start = (double)milliseconds_now()*1.e-3;
+            else if(b3lo == 0x9)
+            {
+                if(b2 == 0x7F)
+                {
+                    if(!paused)
+                        t_pause_start = t_now;
+                    else
+                        t_start += t_now-t_pause_start;
+                    paused = !paused;
+                }
+            }
+        }
+        else if(b3hi == MIDDLEROW)
+        {
+            if(b3lo == 0xC)
+            {
+                if(b2 == 0x7F)
+                {
+                    scale_override = 1;
+                    scale = .5;
+                }
+                else 
+                {
+                    scale_override = 0;
+                    scale = .0;
+                }
+            }
         }
         
 		break;
