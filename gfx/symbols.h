@@ -1556,6 +1556,260 @@ const char *chips_source = "/* Corfield Imitation 1\n"
 "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
 "}\n"
 "\0";
+const char *doublependulum_source = "/* Corfield Imitation 1\n"
+" * Copyright (C) 2019  Alexander Kraus <nr4@z10.info>\n"
+" * \n"
+" * This program is free software: you can redistribute it and/or modify\n"
+" * it under the terms of the GNU General Public License as published by\n"
+" * the Free Software Foundation, either version 3 of the License, or\n"
+" * (at your option) any later version.\n"
+" * \n"
+" * This program is distributed in the hope that it will be useful,\n"
+" * but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+" * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+" * GNU General Public License for more details.\n"
+" * \n"
+" * You should have received a copy of the GNU General Public License\n"
+" * along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
+" */\n"
+"  \n"
+"#version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform float iDial0;\n"
+"uniform float iDial7;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"//lengths\n"
+"float L1 = 2.;\n"
+"float L2 = 1.;\n"
+"\n"
+"//masses\n"
+"float M1 = 3.5;\n"
+"float M2 = 0.1;\n"
+"\n"
+"//constants\n"
+"float G = 9.81;\n"
+"\n"
+"//runge kutta params\n"
+"float h = 1.e-1;\n"
+"float tmax = 3.;\n"
+"\n"
+"/**eval system of differential equations\n"
+"params:\n"
+"tp[0]: theta1\n"
+"tp[1]: theta2\n"
+"tp[2]: ptheta1\n"
+"tp[3]: ptheta2\n"
+"*/\n"
+"vec4 f(vec4 tp)\n"
+"{\n"
+"    float p0w = (L1*L2*(M1+M2*pow(sin(tp[0]-tp[1]),2.)));\n"
+"    float C1 = tp[2]*tp[3]*sin(tp[0]-tp[1])/p0w;\n"
+"    float C2 = (L2*L2*M2*tp[2]*tp[2]+L1*L1*(M1+M2)*tp[3]*tp[3]-L1*L2*M2*tp[2]*tp[3]*cos(tp[0]-tp[1]))*sin(2.*(tp[0]-tp[1]))/(2.*p0w*p0w);\n"
+"    \n"
+"    vec4 ret;\n"
+"    \n"
+"    ret[0] = (L2*tp[2]-L1*tp[3]*cos(tp[0]-tp[1]))/(L1*p0w);\n"
+"    ret[1] = (L1*(M1+M2)*tp[3]-L2*M2*tp[2]*cos(tp[0]-tp[1]))/(L2*M2*p0w);\n"
+"    ret[2] = -(M1+M2)*G*L1*sin(tp[0])-C1+C2;\n"
+"    ret[3] = -M2*G*L2*sin(tp[1])+C1-C2;\n"
+"    \n"
+"    return ret;    \n"
+"}\n"
+"\n"
+"vec4 step_rk4(vec4 tp)\n"
+"{\n"
+"    vec4 k1 = f(tp);\n"
+"    vec4 k2 = f(tp + h/2.*k1);\n"
+"    vec4 k3 = f(tp + h/2.*k2);\n"
+"    vec4 k4 = f(tp + h*k3);\n"
+"    return tp + h/6.*(k1+2.*k2+2.*k3+k4);\n"
+"}\n"
+"\n"
+"void rand(in vec2 x, out float num);\n"
+"void lfnoise(in vec2 t, out float n);\n"
+"void stroke(in float d0, in float s, out float d);\n"
+"void rot3(in vec3 p, out mat3 rot);\n"
+"\n"
+"// Scene\n"
+"float mat;\n"
+"void scene(in vec3 x, out vec2 d)\n"
+"{\n"
+"    d = c.xx;\n"
+"    \n"
+"    x.y -= .1*iTime;\n"
+"    \n"
+"    vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);\n"
+"    float time = 0.;\n"
+"    while(time < tmax) \n"
+"    {\n"
+"        state = step_rk4(state);\n"
+"        time += h;\n"
+"    }\n"
+"    \n"
+"    d.x = x.z -.02 + .01*abs(log(abs(state.r/state.b)));\n"
+"    //stroke(d.x, .005, d.x);\n"
+"}\n"
+"\n"
+"// Normal\n"
+"const float dx = 5.e-4;\n"
+"void normal(in vec3 x, out vec3 n);\n"
+"\n"
+"// Texture\n"
+"void color(in float scale, out vec3 col)\n"
+"{\n"
+"    scale = fract(scale);\n"
+"    const int N = 5;\n"
+"    const vec3 colors[N] = vec3[N](\n"
+"        vec3(1.00,0.67,0.36),\n"
+"        vec3(0.86,0.45,0.50),\n"
+"        vec3(0.67,0.43,0.51),\n"
+"        vec3(0.41,0.36,0.48),\n"
+"        vec3(0.27,0.36,0.48)\n"
+"    );\n"
+"	float index = floor(scale*float(N)), \n"
+"        remainder = scale*float(N)-index;\n"
+"    col = mix(colors[int(index)],colors[int(index)+1], remainder);\n"
+"    col = fract(col);\n"
+"}\n"
+"\n"
+"// Texture\n"
+"void color2(in float scale, out vec3 col)\n"
+"{\n"
+"    scale = fract(scale);\n"
+"    const int N = 5;\n"
+"    const vec3 colors[N] = vec3[N](\n"
+"        vec3(0.95,0.74,0.56),\n"
+"        vec3(0.95,0.64,0.50),\n"
+"        vec3(0.75,0.43,0.42),\n"
+"        vec3(0.44,0.29,0.36),\n"
+"        vec3(0.24,0.15,0.23)\n"
+"    );\n"
+"	float index = floor(scale*float(N)), \n"
+"        remainder = scale*float(N)-index;\n"
+"    col = mix(colors[int(index)],colors[int(index)+1], remainder);\n"
+"    col = fract(col);\n"
+"}\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    // Set up coordinates\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
+"    vec3 col = c.yyy;\n"
+"\n"
+"    if(length(uv) > .5)\n"
+"    {\n"
+"        fragColor = vec4(col, 0.);\n"
+"        return;\n"
+"    }\n"
+"    vec3 na;\n"
+"    lfnoise(iTime*c.xx, na.x);\n"
+"    lfnoise(2.*iTime*c.xx+2337., na.y);\n"
+"    lfnoise(3.*iTime*c.xx+3337., na.z);\n"
+"    \n"
+"    M1 = 2.+mix(0.,1.,iScale)*na.x;\n"
+"    M2 = 2.+mix(0.,1.,iScale)*na.y;\n"
+"    \n"
+"    L1 = 2.+.1*mix(0.,1.,iScale)*na.x;\n"
+"    L2 = 1.+.1*mix(0.,1.,iScale)*na.z;\n"
+"    \n"
+"    \n"
+"    uv /= mix(.5,8.,iDial0);\n"
+"    \n"
+"     // Camera setup\n"
+"    float pp = .3*iTime;\n"
+"    vec3 o = c.yyx,\n"
+"        t = c.yyy,\n"
+"        dir = normalize(t-o),\n"
+"        r = normalize(c.xyy),\n"
+"        u = normalize(cross(r,dir)),\n"
+"        n,\n"
+"        x,\n"
+"        l;\n"
+"    t += uv.x*r + uv.y*u;\n"
+"    dir = normalize(t-o);\n"
+"    vec2 s;\n"
+"    float d = -(o.z)/dir.z;\n"
+"    int N = 450,\n"
+"        i;\n"
+"    \n"
+"    // Graph\n"
+"    x = o + d * dir;\n"
+"    \n"
+"    // Actual Scene\n"
+"    {\n"
+"\n"
+"        // Raymarching\n"
+"//         for(i=0; i<N; ++i)\n"
+"//         {\n"
+"//             x = o + d * dir;\n"
+"//             scene(x,s);\n"
+"//             if(s.x < 1.e-4) break;\n"
+"//             d += s.x;//,.005);\n"
+"//         }\n"
+"\n"
+"        // Illumination\n"
+"        l = normalize(x+c.yxx);\n"
+"        if(i<N)\n"
+"        {\n"
+"            vec4 state = vec4((x.xy-.1*iTime*c.yx)*2.*pi-vec2(pi,pi), 0, 0);\n"
+"            float time = 0.;\n"
+"            while(time < tmax) \n"
+"            {\n"
+"                state = step_rk4(state);\n"
+"                time += h;\n"
+"            }\n"
+"            float da = -.02 - .01*log(abs(state.r/state.b));\n"
+"            d += da;\n"
+"            x = o + d * dir;\n"
+"            normal(x,n);\n"
+"            color(abs(x.z)*4., col);\n"
+"            vec3 c1 = c.yyy;\n"
+"            color2(abs(x.z)*4., c1);\n"
+"            \n"
+"            col = mix(col, c1, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, abs(da)-.1));\n"
+"            \n"
+"                        float na, nal;\n"
+"			rand(floor(.33*iTime)*c.xx, na);\n"
+"            rand(floor(.33*iTime)*c.xx+1., nal);\n"
+"            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
+"             mat3 RR;\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);\n"
+"            col = abs(RR*col);\n"
+"            \n"
+"            col = mix(col, length(col)/sqrt(3)*c.xxx, .7);\n"
+"        }\n"
+"    }\n"
+"    \n"
+"    // Colorize\n"
+"    col = .2*col\n"
+"        + 1.3*col*abs(dot(l,n))\n"
+"        +.4*col*abs(pow(dot(reflect(-l,n),dir),3.));\n"
+"    \n"
+"    float dd;\n"
+"    rand(1200.*uv, dd);\n"
+"    col += dd*.1*c.xxx;\n"
+"    \n"
+"    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
 void Loadrand()
 {
     int rand_size = strlen(rand_source);
@@ -1875,7 +2129,7 @@ void LoadSymbols()
     Loadrand3();
     updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle, doublependulum_program, doublependulum_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -1930,7 +2184,16 @@ chips_iDial0_location;
 chips_iDial7_location;
 chips_iResolution_location;
 chips_iFFT_location;
-const int nprograms = 6;
+int doublependulum_iTime_location;
+doublependulum_iFFTWidth_location;
+doublependulum_iScale_location;
+doublependulum_iHighScale_location;
+doublependulum_iNBeats_location;
+doublependulum_iDial0_location;
+doublependulum_iDial7_location;
+doublependulum_iResolution_location;
+doublependulum_iFFT_location;
+const int nprograms = 7;
 
 void Loadhexagontunnel()
 {
@@ -2179,6 +2442,43 @@ void Loadchips()
     progress += .2/(float)nprograms;
 }
 
+void Loaddoublependulum()
+{
+    int doublependulum_size = strlen(doublependulum_source);
+    doublependulum_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(doublependulum_handle, 1, (GLchar **)&doublependulum_source, &doublependulum_size);
+    glCompileShader(doublependulum_handle);
+#ifdef DEBUG
+    printf("---> doublependulum Shader:\n");
+    debug(doublependulum_handle);
+    printf(">>>>\n");
+#endif
+    doublependulum_program = glCreateProgram();
+    glAttachShader(doublependulum_program,doublependulum_handle);
+    glAttachShader(doublependulum_program,rand_handle);
+    glAttachShader(doublependulum_program,lfnoise_handle);
+    glAttachShader(doublependulum_program,stroke_handle);
+    glAttachShader(doublependulum_program,rot3_handle);
+    glAttachShader(doublependulum_program,normal_handle);
+    glLinkProgram(doublependulum_program);
+#ifdef DEBUG
+    printf("---> doublependulum Program:\n");
+    debugp(doublependulum_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(doublependulum_program);
+    doublependulum_iTime_location = glGetUniformLocation(doublependulum_program, "iTime");
+    doublependulum_iFFTWidth_location = glGetUniformLocation(doublependulum_program, "iFFTWidth");
+    doublependulum_iScale_location = glGetUniformLocation(doublependulum_program, "iScale");
+    doublependulum_iHighScale_location = glGetUniformLocation(doublependulum_program, "iHighScale");
+    doublependulum_iNBeats_location = glGetUniformLocation(doublependulum_program, "iNBeats");
+    doublependulum_iDial0_location = glGetUniformLocation(doublependulum_program, "iDial0");
+    doublependulum_iDial7_location = glGetUniformLocation(doublependulum_program, "iDial7");
+    doublependulum_iResolution_location = glGetUniformLocation(doublependulum_program, "iResolution");
+    doublependulum_iFFT_location = glGetUniformLocation(doublependulum_program, "iFFT");
+    progress += .2/(float)nprograms;
+}
+
 void LoadPrograms()
 {
     Loadhexagontunnel();
@@ -2192,6 +2492,8 @@ void LoadPrograms()
     Loadbroccoli();
     updateBar();
     Loadchips();
+    updateBar();
+    Loaddoublependulum();
     updateBar();
 }
 #endif

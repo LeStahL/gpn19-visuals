@@ -14,13 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+  
+#version 130
+
+uniform float iTime;
+uniform float iFFTWidth;
+uniform float iScale;
+uniform float iHighScale;
+uniform float iNBeats;
+uniform float iDial0;
+uniform float iDial7;
+uniform vec2 iResolution;
+uniform sampler1D iFFT;
 
 // Global constants
 const float pi = acos(-1.);
 const vec3 c = vec3(1.0, 0.0, -1.0);
 float a = 1.0;
-
-float iScale;
 
 //lengths
 float L1 = 2.;
@@ -69,112 +79,18 @@ vec4 step_rk4(vec4 tp)
     return tp + h/6.*(k1+2.*k2+2.*k3+k4);
 }
 
-// Hash function
-void rand(in vec2 x, out float num)
-{
-    x += 400.;
-    num = fract(sin(dot(sign(x)*abs(x) ,vec2(12.9898,78.233)))*43758.5453);
-}
-
-void lfnoise(in vec2 t, out float n)
-{
-    vec2 i = floor(t);
-    t = fract(t);
-    t = smoothstep(c.yy, c.xx, t);
-    vec2 v1, v2;
-    rand(i, v1.x);
-    rand(i+c.xy, v1.y);
-    rand(i+c.yx, v2.x);
-    rand(i+c.xx, v2.y);
-    v1 = c.zz+2.*mix(v1, v2, t.y);
-    n = mix(v1.x, v1.y, t.x);
-}
-
-void rand3(in vec3 x, out float num)
-{
-    x += 400.;
-    num = fract(sin(dot(sign(x)*abs(x) ,vec3(12.9898,78.233,121.112)))*43758.5453);
-}
-
-// Extrusion
-void zextrude(in float z, in float d2d, in float h, out float d)
-{
-    vec2 w = vec2(-d2d, abs(z)-0.5*h);
-    d = length(max(w,0.0));
-}
-
-// Stroke
-void stroke(in float d0, in float s, out float d)
-{
-    d = abs(d0)-s;
-}
-
-// iq's smooth minimum
-void smoothmin(in float a, in float b, in float k, out float dst)
-{
-    float h = max( k-abs(a-b), 0.0 )/k;
-    dst = min( a, b ) - h*h*h*k*(1.0/6.0);
-}
-
-void dvoronoi(in vec2 x, out float d, out vec2 z)
-{
-    vec2 y = floor(x);
-       float ret = 1.;
-    vec2 pf=c.yy, p;
-    float df=10.;
-    
-    for(int i=-1; i<=1; i+=1)
-        for(int j=-1; j<=1; j+=1)
-        {
-            p = y + vec2(float(i), float(j));
-            float pa;
-            rand(p, pa);
-            p += pa;
-            
-            d = length(x-p);
-            
-            if(d < df)
-            {
-                df = d;
-                pf = p;
-            }
-        }
-    for(int i=-1; i<=1; i+=1)
-        for(int j=-1; j<=1; j+=1)
-        {
-            p = y + vec2(float(i), float(j));
-            float pa;
-            rand(p, pa);
-            p += pa;
-            
-            vec2 o = p - pf;
-            d = length(.5*o-dot(x-pf, o)/dot(o,o)*o);
-            ret = min(ret, d);
-        }
-    
-    d = ret;
-    z = pf;
-}
-
-void dbox3(in vec3 x, in vec3 b, out float d)
-{
-  vec3 da = abs(x) - b;
-  d = length(max(da,0.0))
-         + min(max(da.x,max(da.y,da.z)),0.0);
-}
-
-void rot3(in vec3 p, out mat3 rot)
-{
-    rot = mat3(c.xyyy, cos(p.x), sin(p.x), 0., -sin(p.x), cos(p.x))
-        *mat3(cos(p.y), 0., -sin(p.y), c.yxy, sin(p.y), 0., cos(p.y))
-        *mat3(cos(p.z), -sin(p.z), 0., sin(p.z), cos(p.z), c.yyyx);
-}
+void rand(in vec2 x, out float num);
+void lfnoise(in vec2 t, out float n);
+void stroke(in float d0, in float s, out float d);
+void rot3(in vec3 p, out mat3 rot);
 
 // Scene
 float mat;
 void scene(in vec3 x, out vec2 d)
 {
     d = c.xx;
+    
+    x.y -= .1*iTime;
     
     vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);
     float time = 0.;
@@ -184,28 +100,18 @@ void scene(in vec3 x, out vec2 d)
         time += h;
     }
     
-    d.x = x.z -.02 - .01*log(abs(state.r/state.b));
+    d.x = x.z -.02 + .01*abs(log(abs(state.r/state.b)));
     //stroke(d.x, .005, d.x);
 }
 
 // Normal
 const float dx = 5.e-4;
-void normal(in vec3 x, out vec3 n)
-{
-    vec2 s, na;
-    scene(x,s);
-    scene(x+dx*c.xyy, na);
-    n.x = na.x;
-    scene(x+dx*c.yxy, na);
-    n.y = na.x;
-    scene(x+dx*c.yyx, na);
-    n.z = na.x;
-    n = normalize(n-s.x);
-}
+void normal(in vec3 x, out vec3 n);
 
 // Texture
 void color(in float scale, out vec3 col)
 {
+    scale = fract(scale);
     const int N = 5;
     const vec3 colors[N] = vec3[N](
         vec3(1.00,0.67,0.36),
@@ -217,11 +123,13 @@ void color(in float scale, out vec3 col)
 	float index = floor(scale*float(N)), 
         remainder = scale*float(N)-index;
     col = mix(colors[int(index)],colors[int(index)+1], remainder);
+    col = fract(col);
 }
 
 // Texture
 void color2(in float scale, out vec3 col)
 {
+    scale = fract(scale);
     const int N = 5;
     const vec3 colors[N] = vec3[N](
         vec3(0.95,0.74,0.56),
@@ -233,6 +141,7 @@ void color2(in float scale, out vec3 col)
 	float index = floor(scale*float(N)), 
         remainder = scale*float(N)-index;
     col = mix(colors[int(index)],colors[int(index)+1], remainder);
+    col = fract(col);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -241,9 +150,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     a = iResolution.x/iResolution.y;
     vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
     vec3 col = c.yyy;
-     iScale = mod(iTime,1.);
-    //uv /= mix(.5,8.,iScale);
-    
+
+    if(length(uv) > .5)
+    {
+        fragColor = vec4(col, 0.);
+        return;
+    }
     vec3 na;
     lfnoise(iTime*c.xx, na.x);
     lfnoise(2.*iTime*c.xx+2337., na.y);
@@ -256,13 +168,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     L2 = 1.+.1*mix(0.,1.,iScale)*na.z;
     
     
-    if(length(uv) > .5)
-    {
-        fragColor = vec4(col, 0.);
-        return;
-    }
-    
-   
+    uv /= mix(.5,8.,iDial0);
     
      // Camera setup
     float pp = .3*iTime;
@@ -277,8 +183,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     t += uv.x*r + uv.y*u;
     dir = normalize(t-o);
     vec2 s;
-    float d = -(o.z-.03)/dir.z;
-    int N = 850,
+    float d = -(o.z)/dir.z;
+    int N = 450,
         i;
     
     // Graph
@@ -288,32 +194,44 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     {
 
         // Raymarching
-        for(i=0; i<N; ++i)
-        {
-            x = o + d * dir;
-            scene(x,s);
-            if(s.x < 1.e-4) break;
-            d += s.x;//,.005);
-        }
+//         for(i=0; i<N; ++i)
+//         {
+//             x = o + d * dir;
+//             scene(x,s);
+//             if(s.x < 1.e-4) break;
+//             d += s.x;//,.005);
+//         }
 
         // Illumination
         l = normalize(x+c.yxx);
         if(i<N)
         {
-            normal(x,n);
-            color((x.z+.01)/.03, col);
-            vec3 c1;
-            color2((x.z+.01)/.03, c1);
-            vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);
+            vec4 state = vec4((x.xy-.1*iTime*c.yx)*2.*pi-vec2(pi,pi), 0, 0);
             float time = 0.;
             while(time < tmax) 
             {
                 state = step_rk4(state);
                 time += h;
             }
-
-            float daa = x.z -.02 - .01*log(abs(state.r/state.b));
-            col = mix(col, .7*c1, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, daa));
+            float da = -.02 - .01*log(abs(state.r/state.b));
+            d += da;
+            x = o + d * dir;
+            normal(x,n);
+            color(abs(x.z)*4., col);
+            vec3 c1 = c.yyy;
+            color2(abs(x.z)*4., c1);
+            
+            col = mix(col, c1, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, abs(da)-.1));
+            
+                        float na, nal;
+			rand(floor(.33*iTime)*c.xx, na);
+            rand(floor(.33*iTime)*c.xx+1., nal);
+            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
+             mat3 RR;
+            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);
+            col = abs(RR*col);
+            
+            col = mix(col, length(col)/sqrt(3)*c.xxx, .7);
         }
     }
     
@@ -327,4 +245,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     col += dd*.1*c.xxx;
     
     fragColor = clamp(vec4(col,1.0),0.,1.);
+}
+
+void main()
+{
+    mainImage(gl_FragColor, gl_FragCoord.xy);
 }

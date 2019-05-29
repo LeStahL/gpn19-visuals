@@ -455,6 +455,17 @@ void draw()
         glUniform1f(chips_iDial0_location, dial_0_value);
         glUniform1f(chips_iDial7_location, dial_7_value);
     }
+    else if(override_index == 7)
+    {
+        glUseProgram(doublependulum_program);
+        glUniform1f(doublependulum_iTime_location, t);
+        glUniform2f(doublependulum_iResolution_location, w, h);
+        glUniform1f(doublependulum_iScale_location, scale);
+        glUniform1f(doublependulum_iNBeats_location, nbeats);
+        glUniform1f(doublependulum_iHighScale_location, highscale);
+        glUniform1f(doublependulum_iDial0_location, dial_0_value);
+        glUniform1f(doublependulum_iDial7_location, dial_7_value);
+    }
     
     quad();
     
