@@ -213,7 +213,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 state = step_rk4(state);
                 time += h;
             }
-            float da = -.02 - .01*log(abs(state.r/state.b));
+            float da = -.02 - mix(.01,.02,iScale)*log(abs(state.r/state.b));
             d += da;
             x = o + d * dir;
             normal(x,n);

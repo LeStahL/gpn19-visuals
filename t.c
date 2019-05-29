@@ -705,7 +705,12 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
             else if(b3lo == 0x7) dial_7_value = (float)b2/(float)0x7F;
         }
         else if(b3hi == TOPROW)
-            override_index = b3lo + 1;
+        {
+            if(b3lo < 8)
+                override_index = b3lo + 1;
+            else if(b3lo == 0xB)
+                t_start = (double)milliseconds_now()*1.e-3;
+        }
         
 		break;
 	case MIM_LONGDATA:
