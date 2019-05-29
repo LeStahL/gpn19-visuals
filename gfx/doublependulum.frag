@@ -76,12 +76,11 @@ void rand(in vec2 x, out float num)
     num = fract(sin(dot(sign(x)*abs(x) ,vec2(12.9898,78.233)))*43758.5453);
 }
 
-void lfnoise_edge(in vec2 t, out float n)
+void lfnoise(in vec2 t, out float n)
 {
     vec2 i = floor(t);
     t = fract(t);
-    //t = smoothstep(c.yy, c.xx, t);
-    t = smoothstep(.4*c.xx,.6*c.xx, t);
+    t = smoothstep(c.yy, c.xx, t);
     vec2 v1, v2;
     rand(i, v1.x);
     rand(i+c.xy, v1.y);
@@ -177,7 +176,7 @@ void scene(in vec3 x, out vec2 d)
 {
     d = c.xx;
     
-    vec4 state = vec4(x.xy*2.*pi-4.*vec2(pi/4.,pi/4.), 0, 0);
+    vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);
     float time = 0.;
     while(time < tmax) 
     {
@@ -243,20 +242,25 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
     vec3 col = c.yyy;
      iScale = mod(iTime,1.);
-    uv /= 1.+4.*iScale;
+    //uv /= mix(.5,8.,iScale);
     
-    M1 = 2.+1.*sin(iTime);
-    M2 = 2.+1.*cos(2.*iTime);
+    vec3 na;
+    lfnoise(iTime*c.xx, na.x);
+    lfnoise(2.*iTime*c.xx+2337., na.y);
+    lfnoise(3.*iTime*c.xx+3337., na.z);
     
-    L1 = 2.+.1*sin(iTime);
-    L2 = 1.+.1*cos(3.*iTime);
+    M1 = 2.+mix(0.,1.,iScale)*na.x;
+    M2 = 2.+mix(0.,1.,iScale)*na.y;
+    
+    L1 = 2.+.1*mix(0.,1.,iScale)*na.x;
+    L2 = 1.+.1*mix(0.,1.,iScale)*na.z;
     
     
-    /*if(length(uv) > .5)
+    if(length(uv) > .5)
     {
         fragColor = vec4(col, 0.);
         return;
-    }*/
+    }
     
    
     
@@ -300,7 +304,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             color((x.z+.01)/.03, col);
             vec3 c1;
             color2((x.z+.01)/.03, c1);
-            vec4 state = vec4(x.xy*2.*pi-vec2(pi/2.,pi/2.), 0, 0);
+            vec4 state = vec4(x.xy*2.*pi-vec2(pi,pi), 0, 0);
             float time = 0.;
             while(time < tmax) 
             {
