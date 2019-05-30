@@ -328,6 +328,8 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -429,7 +431,7 @@ const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team21
 "            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
 "            \n"
 "            mat3 RR;\n"
-"            rot3(na*1.e3*vec3(1.1,1.5,1.9),RR);\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+12.*iNote,RR);\n"
 "\n"
 "            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),.5+.5*sin(x.z));\n"
 "            col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));\n"
@@ -483,6 +485,8 @@ const char *voronoinet_source = "/* Corfield Imitation 1\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -696,6 +700,8 @@ const char *startunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 a
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -859,6 +865,8 @@ const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "out vec4 gl_FragColor;\n"
 "\n"
@@ -1141,6 +1149,8 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -1305,7 +1315,7 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "            mat3 RR;\n"
 "            float ras;\n"
 "            rand(mat*c.xx,ras);\n"
-"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+1.*ras+.5*cos(x.z),RR);\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+1.*ras+.5*cos(x.z)+iNote*210.,RR);\n"
 "\n"
 "            col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),.5+.5*sin(x.z));\n"
 "            //rot3(c.xxx+x.z+1200.*na*mat+1.e3*na,RR);\n"
@@ -1315,6 +1325,7 @@ const char *broccoli_source = "/* Corfield Imitation 1\n"
 "            col = mix(col, abs(RR*col), step(0.,length(sign(n))));\n"
 "            \n"
 "            col = mix(col, 3.*col, step(.9,length(x.xy))*step(1.1,length(x.xy)));\n"
+"            col = mix(col, .3*length(col)/sqrt(3.)*c.xxx, iPressure);\n"
 "        }\n"
 "    }\n"
 "    vec3 c1 = col;\n"
@@ -1366,6 +1377,8 @@ const char *chips_source = "/* Corfield Imitation 1\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -1591,6 +1604,8 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "uniform float iDial7;\n"
 "uniform vec2 iResolution;\n"
 "uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
 "\n"
 "// Global constants\n"
 "const float pi = acos(-1.);\n"
@@ -1811,6 +1826,139 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "    col += dd*.1*c.xxx;\n"
 "    \n"
 "    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
+const char *midikeyboard_source = "#version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform float iDial0;\n"
+"uniform float iDial6;\n"
+"uniform float iDial7;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"void dbox(in vec2 x, in vec2 b, out float d)\n"
+"{\n"
+"    vec2 da = abs(x)-b;\n"
+"    d = length(max(da,c.yy)) + min(max(da.x,da.y),0.0);\n"
+"}\n"
+"\n"
+"void key(in float keycode, out float windex, out float bindex)\n"
+"{\n"
+"    float note = mod(keycode-48., 12.),\n"
+"        oct = round((keycode-48.-note)/12.);\n"
+"    if(note == 0.) //C\n"
+"    {\n"
+"        windex = 7.*oct;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"    else if(note == 1.) //C#\n"
+"    {\n"
+"        windex = -499.;\n"
+"        bindex = 7.*oct;\n"
+"    }\n"
+"    else if(note == 2.) //D\n"
+"    {\n"
+"        windex = 7.*oct + 1.;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"	else if(note == 3.) //D#\n"
+"    {\n"
+"        windex = -499.;\n"
+"        bindex = 7.*oct + 1.;\n"
+"    }\n"
+"    else if(note == 4.) //E\n"
+"    {\n"
+"        windex = 7.*oct + 2.;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"	else if(note == 5.) //F\n"
+"    {\n"
+"        windex = 7.*oct + 3.;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"   	else if(note == 6.) //F#\n"
+"    {\n"
+"        windex = -499.;\n"
+"        bindex = 7.*oct + 3.;\n"
+"    }\n"
+"    else if(note == 7.) //G\n"
+"    {\n"
+"        windex = 7.*oct + 4.;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"   	else if(note == 8.) //G#\n"
+"    {\n"
+"        windex = -499.;\n"
+"        bindex = 7.*oct + 4.;\n"
+"    }\n"
+"    else if(note == 9.) //A\n"
+"    {\n"
+"        windex = 7.*oct + 5.;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"   	else if(note == 10.) //A#\n"
+"    {\n"
+"        windex = -499.;\n"
+"        bindex = 7.*oct + 5.;\n"
+"    }\n"
+"    else if(note == 11.) //H\n"
+"    {\n"
+"        windex = 7.*oct + 6.;\n"
+"        bindex = -499.;\n"
+"    }\n"
+"}\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 x = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
+"    vec3 col = c.yyy;\n"
+"    \n"
+"    x.x += 7.*a/16.;\n"
+"    \n"
+"//     iNote = 62.;\n"
+"    \n"
+"    // determine note index\n"
+"    float windex, bindex;\n"
+"    key(iNote, windex, bindex);\n"
+"    \n"
+"    float d;\n"
+"    \n"
+"    // white keys\n"
+"    vec2 y = vec2(mod(x.x, a/16.)-a/32.,x.y);\n"
+"    dbox(y-.2*c.yx, vec2(a/34.,.4), d);\n"
+"    float inda = ceil((x.x-y.x)*16./a);\n"
+"    if(inda < 24.)\n"
+"	    col = mix(col, mix(c.xxx,c.yxy,float(inda==(windex))), smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d));\n"
+"\n"
+"    // black keys\n"
+"    vec2 z = vec2(mod(x.x-a/32., a/16.)-a/32.,x.y);\n"
+"    float ind = round((x.x-z.x)*16./a),\n"
+"        cond = mod(ind, 7.);\n"
+"	if(cond != 2. && cond != 6.)\n"
+"    {\n"
+"    	dbox(z-.4*c.yx-.0*c.xy, vec2(a/68.,.4), d);\n"
+"    	col = mix(col, mix(c.yyy, c.yyx, float(ind == bindex)), smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d));\n"
+"    }\n"
+"    \n"
+"    fragColor = vec4(col,1.0);\n"
 "}\n"
 "\n"
 "void main()\n"
@@ -2137,7 +2285,7 @@ void LoadSymbols()
     Loadrand3();
     updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle, doublependulum_program, doublependulum_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle, doublependulum_program, doublependulum_handle, midikeyboard_program, midikeyboard_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -2148,6 +2296,8 @@ hexagontunnel_iDial6_location;
 hexagontunnel_iDial7_location;
 hexagontunnel_iResolution_location;
 hexagontunnel_iFFT_location;
+hexagontunnel_iNote_location;
+hexagontunnel_iPressure_location;
 int voronoinet_iTime_location;
 voronoinet_iFFTWidth_location;
 voronoinet_iScale_location;
@@ -2158,6 +2308,8 @@ voronoinet_iDial6_location;
 voronoinet_iDial7_location;
 voronoinet_iResolution_location;
 voronoinet_iFFT_location;
+voronoinet_iNote_location;
+voronoinet_iPressure_location;
 int startunnel_iTime_location;
 startunnel_iFFTWidth_location;
 startunnel_iScale_location;
@@ -2168,6 +2320,8 @@ startunnel_iDial6_location;
 startunnel_iDial7_location;
 startunnel_iResolution_location;
 startunnel_iFFT_location;
+startunnel_iNote_location;
+startunnel_iPressure_location;
 int team210_logo_iTime_location;
 team210_logo_iFFTWidth_location;
 team210_logo_iScale_location;
@@ -2178,6 +2332,8 @@ team210_logo_iDial6_location;
 team210_logo_iDial7_location;
 team210_logo_iResolution_location;
 team210_logo_iFFT_location;
+team210_logo_iNote_location;
+team210_logo_iPressure_location;
 int broccoli_iTime_location;
 broccoli_iFFTWidth_location;
 broccoli_iScale_location;
@@ -2188,6 +2344,8 @@ broccoli_iDial6_location;
 broccoli_iDial7_location;
 broccoli_iResolution_location;
 broccoli_iFFT_location;
+broccoli_iNote_location;
+broccoli_iPressure_location;
 int chips_iTime_location;
 chips_iFFTWidth_location;
 chips_iScale_location;
@@ -2198,6 +2356,8 @@ chips_iDial6_location;
 chips_iDial7_location;
 chips_iResolution_location;
 chips_iFFT_location;
+chips_iNote_location;
+chips_iPressure_location;
 int doublependulum_iTime_location;
 doublependulum_iFFTWidth_location;
 doublependulum_iScale_location;
@@ -2208,7 +2368,21 @@ doublependulum_iDial6_location;
 doublependulum_iDial7_location;
 doublependulum_iResolution_location;
 doublependulum_iFFT_location;
-const int nprograms = 7;
+doublependulum_iNote_location;
+doublependulum_iPressure_location;
+int midikeyboard_iTime_location;
+midikeyboard_iFFTWidth_location;
+midikeyboard_iScale_location;
+midikeyboard_iHighScale_location;
+midikeyboard_iNBeats_location;
+midikeyboard_iDial0_location;
+midikeyboard_iDial6_location;
+midikeyboard_iDial7_location;
+midikeyboard_iResolution_location;
+midikeyboard_iFFT_location;
+midikeyboard_iNote_location;
+midikeyboard_iPressure_location;
+const int nprograms = 8;
 
 void Loadhexagontunnel()
 {
@@ -2248,6 +2422,8 @@ void Loadhexagontunnel()
     hexagontunnel_iDial7_location = glGetUniformLocation(hexagontunnel_program, "iDial7");
     hexagontunnel_iResolution_location = glGetUniformLocation(hexagontunnel_program, "iResolution");
     hexagontunnel_iFFT_location = glGetUniformLocation(hexagontunnel_program, "iFFT");
+    hexagontunnel_iNote_location = glGetUniformLocation(hexagontunnel_program, "iNote");
+    hexagontunnel_iPressure_location = glGetUniformLocation(hexagontunnel_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2292,6 +2468,8 @@ void Loadvoronoinet()
     voronoinet_iDial7_location = glGetUniformLocation(voronoinet_program, "iDial7");
     voronoinet_iResolution_location = glGetUniformLocation(voronoinet_program, "iResolution");
     voronoinet_iFFT_location = glGetUniformLocation(voronoinet_program, "iFFT");
+    voronoinet_iNote_location = glGetUniformLocation(voronoinet_program, "iNote");
+    voronoinet_iPressure_location = glGetUniformLocation(voronoinet_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2333,6 +2511,8 @@ void Loadstartunnel()
     startunnel_iDial7_location = glGetUniformLocation(startunnel_program, "iDial7");
     startunnel_iResolution_location = glGetUniformLocation(startunnel_program, "iResolution");
     startunnel_iFFT_location = glGetUniformLocation(startunnel_program, "iFFT");
+    startunnel_iNote_location = glGetUniformLocation(startunnel_program, "iNote");
+    startunnel_iPressure_location = glGetUniformLocation(startunnel_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2378,6 +2558,8 @@ void Loadteam210_logo()
     team210_logo_iDial7_location = glGetUniformLocation(team210_logo_program, "iDial7");
     team210_logo_iResolution_location = glGetUniformLocation(team210_logo_program, "iResolution");
     team210_logo_iFFT_location = glGetUniformLocation(team210_logo_program, "iFFT");
+    team210_logo_iNote_location = glGetUniformLocation(team210_logo_program, "iNote");
+    team210_logo_iPressure_location = glGetUniformLocation(team210_logo_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2419,6 +2601,8 @@ void Loadbroccoli()
     broccoli_iDial7_location = glGetUniformLocation(broccoli_program, "iDial7");
     broccoli_iResolution_location = glGetUniformLocation(broccoli_program, "iResolution");
     broccoli_iFFT_location = glGetUniformLocation(broccoli_program, "iFFT");
+    broccoli_iNote_location = glGetUniformLocation(broccoli_program, "iNote");
+    broccoli_iPressure_location = glGetUniformLocation(broccoli_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2460,6 +2644,8 @@ void Loadchips()
     chips_iDial7_location = glGetUniformLocation(chips_program, "iDial7");
     chips_iResolution_location = glGetUniformLocation(chips_program, "iResolution");
     chips_iFFT_location = glGetUniformLocation(chips_program, "iFFT");
+    chips_iNote_location = glGetUniformLocation(chips_program, "iNote");
+    chips_iPressure_location = glGetUniformLocation(chips_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2498,6 +2684,43 @@ void Loaddoublependulum()
     doublependulum_iDial7_location = glGetUniformLocation(doublependulum_program, "iDial7");
     doublependulum_iResolution_location = glGetUniformLocation(doublependulum_program, "iResolution");
     doublependulum_iFFT_location = glGetUniformLocation(doublependulum_program, "iFFT");
+    doublependulum_iNote_location = glGetUniformLocation(doublependulum_program, "iNote");
+    doublependulum_iPressure_location = glGetUniformLocation(doublependulum_program, "iPressure");
+    progress += .2/(float)nprograms;
+}
+
+void Loadmidikeyboard()
+{
+    int midikeyboard_size = strlen(midikeyboard_source);
+    midikeyboard_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(midikeyboard_handle, 1, (GLchar **)&midikeyboard_source, &midikeyboard_size);
+    glCompileShader(midikeyboard_handle);
+#ifdef DEBUG
+    printf("---> midikeyboard Shader:\n");
+    debug(midikeyboard_handle);
+    printf(">>>>\n");
+#endif
+    midikeyboard_program = glCreateProgram();
+    glAttachShader(midikeyboard_program,midikeyboard_handle);
+    glLinkProgram(midikeyboard_program);
+#ifdef DEBUG
+    printf("---> midikeyboard Program:\n");
+    debugp(midikeyboard_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(midikeyboard_program);
+    midikeyboard_iTime_location = glGetUniformLocation(midikeyboard_program, "iTime");
+    midikeyboard_iFFTWidth_location = glGetUniformLocation(midikeyboard_program, "iFFTWidth");
+    midikeyboard_iScale_location = glGetUniformLocation(midikeyboard_program, "iScale");
+    midikeyboard_iHighScale_location = glGetUniformLocation(midikeyboard_program, "iHighScale");
+    midikeyboard_iNBeats_location = glGetUniformLocation(midikeyboard_program, "iNBeats");
+    midikeyboard_iDial0_location = glGetUniformLocation(midikeyboard_program, "iDial0");
+    midikeyboard_iDial6_location = glGetUniformLocation(midikeyboard_program, "iDial6");
+    midikeyboard_iDial7_location = glGetUniformLocation(midikeyboard_program, "iDial7");
+    midikeyboard_iResolution_location = glGetUniformLocation(midikeyboard_program, "iResolution");
+    midikeyboard_iFFT_location = glGetUniformLocation(midikeyboard_program, "iFFT");
+    midikeyboard_iNote_location = glGetUniformLocation(midikeyboard_program, "iNote");
+    midikeyboard_iPressure_location = glGetUniformLocation(midikeyboard_program, "iPressure");
     progress += .2/(float)nprograms;
 }
 
@@ -2516,6 +2739,8 @@ void LoadPrograms()
     Loadchips();
     updateBar();
     Loaddoublependulum();
+    updateBar();
+    Loadmidikeyboard();
     updateBar();
 }
 #endif

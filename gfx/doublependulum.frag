@@ -27,6 +27,8 @@ uniform float iDial6;
 uniform float iDial7;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;
+uniform float iNote;
+uniform float iPressure;
 
 // Global constants
 const float pi = acos(-1.);

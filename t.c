@@ -182,7 +182,10 @@ double
     dial_4_value,
     dial_5_value,
     dial_6_value,
-    dial_7_value
+    dial_7_value,
+    
+    note,
+    pressure
     ;
 int
     // Loading bar
@@ -208,6 +211,9 @@ int
     cutoff = 96,
     effect = 0,
     
+    first_fox_texture,
+    first_fox_texture_location,
+    
     // Antialiasing
     fsaa = 25;
 int buffer_size = 64;
@@ -228,6 +234,39 @@ HDC hdc;
 HGLRC glrc;
 GLenum error;
 #define NSHADERS 3.
+
+// Read PNG files
+void loadPNG(char *filename, int *w, int *h, GLubyte **data)
+{
+    png_structp png_struct;
+    png_bytepp png_rows;
+    png_infop png_info;
+    int png_width, png_height, png_npasses;
+    png_byte png_color_type, png_bit_depth;
+    char png_hdr[8];
+    FILE *f = fopen(filename, "rb");
+    if(!f)
+        printf("Could not open winkefuchs1.png\n");
+    fread(png_hdr, 1, 8, f);
+    if(png_sig_cmp(png_hdr, 0, 8))
+        printf("%s is not a valid png file.\n", filename);
+    png_struct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    png_info = png_create_info_struct(png_struct);
+    png_init_io(png_struct, f);
+    png_set_sig_bytes(png_struct, 8);
+    png_read_info(png_struct, png_info);
+    png_width = png_get_image_width(png_struct, png_info);
+    png_height = png_get_image_height(png_struct, png_info);
+    png_color_type = png_get_color_type(png_struct, png_info);
+    png_bit_depth = png_get_bit_depth(png_struct, png_info);
+    png_read_png(png_struct, png_info, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
+    png_rows = png_get_rows(png_struct, png_info);
+    
+    
+
+    png_read_image(png_struct, png_rows);
+    fclose(f);
+}
 
 void quad()
 {
@@ -395,6 +434,8 @@ void draw()
         glUniform1f(hexagontunnel_iDial0_location, dial_0_value);
         glUniform1f(hexagontunnel_iDial6_location, dial_6_value);
         glUniform1f(hexagontunnel_iDial7_location, dial_7_value);
+        glUniform1f(hexagontunnel_iNote_location, note);
+        glUniform1f(hexagontunnel_iPressure_location, pressure);
     }
     else if(override_index == 2)
     {
@@ -407,6 +448,8 @@ void draw()
         glUniform1f(voronoinet_iDial0_location, dial_0_value);
         glUniform1f(voronoinet_iDial6_location, dial_6_value);
         glUniform1f(voronoinet_iDial7_location, dial_7_value);
+        glUniform1f(voronoinet_iNote_location, note);
+        glUniform1f(voronoinet_iPressure_location, pressure);
     }
     else if(override_index == 3)
     {
@@ -419,6 +462,8 @@ void draw()
         glUniform1f(startunnel_iDial0_location, dial_0_value);
         glUniform1f(startunnel_iDial6_location, dial_6_value);
         glUniform1f(startunnel_iDial7_location, dial_7_value);
+        glUniform1f(startunnel_iNote_location, note);
+        glUniform1f(startunnel_iPressure_location, pressure);
     }
     else if(override_index == 4)
     {
@@ -431,6 +476,8 @@ void draw()
         glUniform1f(team210_logo_iDial0_location, dial_0_value);
         glUniform1f(team210_logo_iDial6_location, dial_6_value);
         glUniform1f(team210_logo_iDial7_location, dial_7_value);
+        glUniform1f(team210_logo_iNote_location, note);
+        glUniform1f(team210_logo_iPressure_location, pressure);
     }
     else if(override_index == 5)
     {
@@ -443,6 +490,8 @@ void draw()
         glUniform1f(broccoli_iDial0_location, dial_0_value);
         glUniform1f(broccoli_iDial6_location, dial_6_value);
         glUniform1f(broccoli_iDial7_location, dial_7_value);
+        glUniform1f(broccoli_iNote_location, note);
+        glUniform1f(broccoli_iPressure_location, pressure);
     }
     else if(override_index == 6)
     {
@@ -455,6 +504,8 @@ void draw()
         glUniform1f(chips_iDial0_location, dial_0_value);
         glUniform1f(chips_iDial6_location, dial_6_value);
         glUniform1f(chips_iDial7_location, dial_7_value);
+        glUniform1f(chips_iNote_location, note);
+        glUniform1f(chips_iPressure_location, pressure);
     }
     else if(override_index == 7)
     {
@@ -467,6 +518,22 @@ void draw()
         glUniform1f(doublependulum_iDial0_location, dial_0_value);
         glUniform1f(doublependulum_iDial6_location, dial_6_value);
         glUniform1f(doublependulum_iDial7_location, dial_7_value);
+        glUniform1f(doublependulum_iNote_location, note);
+        glUniform1f(doublependulum_iPressure_location, pressure);
+    }
+    else if(override_index == 8)
+    {
+        glUseProgram(midikeyboard_program);
+        glUniform1f(midikeyboard_iTime_location, t);
+        glUniform2f(midikeyboard_iResolution_location, w, h);
+        glUniform1f(midikeyboard_iScale_location, scale);
+        glUniform1f(midikeyboard_iNBeats_location, nbeats);
+        glUniform1f(midikeyboard_iHighScale_location, highscale);
+        glUniform1f(midikeyboard_iDial0_location, dial_0_value);
+        glUniform1f(midikeyboard_iDial6_location, dial_6_value);
+        glUniform1f(midikeyboard_iDial7_location, dial_7_value);
+        glUniform1f(midikeyboard_iNote_location, note);
+        glUniform1f(midikeyboard_iPressure_location, pressure);
     }
     
     quad();
@@ -752,6 +819,46 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
                     override_index += 1;
             }
         }
+        
+		break;
+	case MIM_LONGDATA:
+		break;
+	case MIM_ERROR:
+		break;
+	case MIM_LONGERROR:
+		break;
+	case MIM_MOREDATA:
+		break;
+	default:
+		break;
+	}
+	return;
+}
+
+void CALLBACK MidiInProc2(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+{
+	switch(wMsg) {
+	case MIM_OPEN:
+		break;
+	case MIM_CLOSE:
+		break;
+	case MIM_DATA:
+        BYTE b1 = (dwParam1 >> 24) & 0xFF,
+            b2 = (dwParam1 >> 16) & 0xFF,
+            b3 = (dwParam1 >> 8) & 0xFF,
+            b4 = dwParam1 & 0xFF;
+        BYTE b3lo = b3 & 0xF,
+            b3hi = (b3 >> 4) & 0xF;
+        if(b4 == 0x90)
+        {
+            note = b3;
+            pressure = 1.-(double)b2/(double)0x7F;
+        }
+        else if(b4 == 0x80)
+        {
+//             note = 0.;
+        }
+//         printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x %01x %01x %02x\n", dwParam1, b1, b2, b3hi, b3lo, b4);
         
 		break;
 	case MIM_LONGDATA:
@@ -1195,6 +1302,26 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     
     rv = midiInOpen(&hMidiDevice, nMidiPort, (DWORD)(void*)MidiInProc, 0, CALLBACK_FUNCTION);
     midiInStart(hMidiDevice);
+    
+    // Setup MIDI keyboard
+    HMIDIIN hMidiDevice_2 = NULL;;
+	DWORD nMidiPort_2 = 1;
+	MMRESULT rv_2;
+	MIDIINCAPS caps_2;
+
+    rv = midiInOpen(&hMidiDevice_2, nMidiPort_2, (DWORD)(void*)MidiInProc2, 0, CALLBACK_FUNCTION);
+    midiInStart(hMidiDevice_2);
+    
+    
+//     // Setup textures with the PNG data
+//     glGenTextures(1, &first_fox_texture);
+//     glBindTexture(GL_TEXTURE_2D, first_fox_texture);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, png_width, png_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)png_rows);
+//     glBindTexture(GL_TEXTURE_2D, 0);
     
     // Main loop
     t_start = (double)milliseconds_now()*1.e-3;

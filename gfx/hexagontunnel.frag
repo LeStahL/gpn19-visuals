@@ -27,6 +27,8 @@ uniform float iDial6;
 uniform float iDial7;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;
+uniform float iNote;
+uniform float iPressure;
 
 // Global constants
 const float pi = acos(-1.);
@@ -128,7 +130,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
             
             mat3 RR;
-            rot3(na*1.e3*vec3(1.1,1.5,1.9),RR);
+            rot3(na*1.e3*vec3(1.1,1.5,1.9)+12.*iNote,RR);
 
             col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),.5+.5*sin(x.z));
             col = mix(col,vec3(0.25,0.23,0.21),.5+.5*cos(4.*x.z+mat));

@@ -27,6 +27,8 @@ uniform float iDial6;
 uniform float iDial7;
 uniform vec2 iResolution;
 uniform sampler1D iFFT;
+uniform float iNote;
+uniform float iPressure;
 
 // Global constants
 const float pi = acos(-1.);
@@ -191,7 +193,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             mat3 RR;
             float ras;
             rand(mat*c.xx,ras);
-            rot3(na*1.e3*vec3(1.1,1.5,1.9)+1.*ras+.5*cos(x.z),RR);
+            rot3(na*1.e3*vec3(1.1,1.5,1.9)+1.*ras+.5*cos(x.z)+iNote*210.,RR);
 
             col = mix((.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*vec3(0.89,0.44,0.23)),.5+.5*sin(x.z));
             //rot3(c.xxx+x.z+1200.*na*mat+1.e3*na,RR);
@@ -201,6 +203,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             col = mix(col, abs(RR*col), step(0.,length(sign(n))));
             
             col = mix(col, 3.*col, step(.9,length(x.xy))*step(1.1,length(x.xy)));
+            col = mix(col, .3*length(col)/sqrt(3.)*c.xxx, iPressure);
         }
     }
     vec3 c1 = col;
