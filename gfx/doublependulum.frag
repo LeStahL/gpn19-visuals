@@ -232,7 +232,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             rand(floor(.33*iTime)*c.xx+1., nal);
             na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
              mat3 RR;
-            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);
+            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col)+iNote*210.,RR);
             col = abs(RR*col);
             
             col = mix(col, length(col)/sqrt(3)*c.xxx, .7);

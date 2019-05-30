@@ -42,7 +42,7 @@ if(WIN32)
     
     add_custom_target(symbolization
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/gfx/
-        COMMAND python symbolize.py hexagontunnel.frag voronoinet.frag startunnel.frag team210_logo.frag broccoli.frag chips.frag doublependulum.frag midikeyboard.frag -o symbols.h
+        COMMAND python symbolize.py hexagontunnel.frag voronoinet.frag startunnel.frag team210_logo.frag broccoli.frag chips.frag doublependulum.frag midikeyboard.frag wursttunnel.frag -o symbols.h
     )
     
     add_subdirectory(thirdparty/fftw-3.3.8)
@@ -61,7 +61,7 @@ if(WIN32)
     include_directories("${PROJECT_SOURCE_DIR}/thirdparty/libpng" "${PROJECT_BINARY_DIR}/thirdparty/libpng")
     
     add_definitions(/Gy /O1 /fp:fast /GR- /GS- /MT)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:demo /SUBSYSTEM:Windows  /OPT:REF  /OPT:ICF=10 /VERBOSE /NODEFAULTLIB") 
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:demo /SUBSYSTEM:Windows  /OPT:REF  /OPT:ICF=10 /VERBOSE /NODEFAULTLIB") #    Add  for demos 
     add_executable(gpn19-visuals t.c)
     
     # for debug output: User32.lib ucrt.lib msvcrt.lib

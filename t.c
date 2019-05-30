@@ -31,6 +31,7 @@ int _fltused = 0;
 #include "commctrl.h"
 #include <mmsystem.h>
 #include <Mmreg.h>
+#include <memory.h>
 
 #include <GL/gl.h>
 #include "glext.h"
@@ -44,6 +45,11 @@ void *memset(void *ptr, int value, size_t num)
     for(int i=num-1; i>=0; i--)
         ((unsigned char *)ptr)[i] = value;
     return ptr;
+}
+
+void *memcpy(void *dst, const void *src, size_t count)
+{
+    return CopyMemory(dst, src, count);
 }
 
 size_t strlen(const char *str)
@@ -262,9 +268,13 @@ void loadPNG(char *filename, int *w, int *h, GLubyte **data)
     png_read_png(png_struct, png_info, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
     png_rows = png_get_rows(png_struct, png_info);
     
+    unsigned int row_bytes = png_get_rowbytes(png_struct, png_info);
+    *data = (unsigned char*) malloc(row_bytes * png_height);
+    for(int i=0; i<png_height; ++i)
+        memcpy(*data+(row_bytes * (png_height-1-i)), png_rows[i], row_bytes);
+    *w = png_width;
+    *h = png_height;
     
-
-    png_read_image(png_struct, png_rows);
     fclose(f);
 }
 
@@ -535,6 +545,20 @@ void draw()
         glUniform1f(midikeyboard_iNote_location, note);
         glUniform1f(midikeyboard_iPressure_location, pressure);
     }
+    else if(override_index == 9)
+    {
+        glUseProgram(wursttunnel_program);
+        glUniform1f(wursttunnel_iTime_location, t);
+        glUniform2f(wursttunnel_iResolution_location, w, h);
+        glUniform1f(wursttunnel_iScale_location, scale);
+        glUniform1f(wursttunnel_iNBeats_location, nbeats);
+        glUniform1f(wursttunnel_iHighScale_location, highscale);
+        glUniform1f(wursttunnel_iDial0_location, dial_0_value);
+        glUniform1f(wursttunnel_iDial6_location, dial_6_value);
+        glUniform1f(wursttunnel_iDial7_location, dial_7_value);
+        glUniform1f(wursttunnel_iNote_location, note);
+        glUniform1f(wursttunnel_iPressure_location, pressure);
+    }
     
     quad();
     
@@ -795,7 +819,9 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
         }
         else if(b3hi == MIDDLEROW)
         {
-            if(b3lo == 0xC)
+            if(b3lo < 8)
+                override_index = b3lo + 9.;
+            else if(b3lo == 0xC)
             {
                 if(b2 == 0x7F)
                 {
@@ -1311,6 +1337,11 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
 
     rv = midiInOpen(&hMidiDevice_2, nMidiPort_2, (DWORD)(void*)MidiInProc2, 0, CALLBACK_FUNCTION);
     midiInStart(hMidiDevice_2);
+    
+    // Load png
+    int png_width, png_height;
+    GLubyte *png_data;
+//     loadPNG("winkefuchs1.png", &png_width, &png_height, &png_data);
     
     
 //     // Setup textures with the PNG data

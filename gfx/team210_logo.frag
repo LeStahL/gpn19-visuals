@@ -214,7 +214,7 @@ void background2(in vec2 uv, out vec3 col)
     na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));
     
     mat3 RRR;
-    rot3(na*1.e3*vec3(1.1,1.5,1.9),RRR);
+    rot3(na*1.e3*vec3(1.1,1.5,1.9)+iNote*210.,RRR);
 
     orange = mix((.5+.5*n.y)*orange,(1.+.8*mat)*abs(RRR*orange),.5+.5*n.x);
     orange = mix(orange,.2*RRR*orange,.5+.5*n.y);

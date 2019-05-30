@@ -199,7 +199,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             	col = mix(col, 1.6*vec3(0.88,0.77,0.99), step(.018,x.z));
             }
             mat3 RR;
-            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);
+            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col)+iNote*210.,RR);
 
             col = mix(col,.3*abs(RR*col),.5+.5*sin(1.*length(x.xy)+length(col)));
             col = mix(col,abs(RR*col),.5+.5*cos(21.*x.z+length(col)));

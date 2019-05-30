@@ -2,8 +2,8 @@
 #ifndef SYMBOLIZE_H
 #define SYMBOLIZE_H
 
-int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle, dcirclesegment_handle, dcircle_handle, dlinesegment_handle, dlogo210_handle, rand3_handle;
-const int nsymbols = 21;
+int rand_handle, zextrude_handle, stroke_handle, smoothmin_handle, dhexagonpattern_handle, normal_handle, rot3_handle, lfnoise_handle, dbox_handle, dbox3_handle, dvoronoi_handle, dquadvoronoi_handle, analytical_box_handle, mfnoise_handle, dpolygon_handle, dstar_handle, dcirclesegment_handle, dcircle_handle, dlinesegment_handle, dlogo210_handle, rand3_handle, dspline3_handle;
+const int nsymbols = 22;
 const char *rand_source = "#version 130\n\n"
 "void rand(in vec2 x, out float n)\n"
 "{\n"
@@ -297,6 +297,47 @@ const char *rand3_source = "#version 130\n\n"
 "{\n"
 "    x += 400.;\n"
 "    num = fract(sin(dot(sign(x)*abs(x) ,vec3(12.9898,78.233,121.112)))*43758.5453);\n"
+"}\n"
+"\0";
+const char *dspline3_source = "#version 130\n\n"
+"const vec3 c = vec3(1.,0.,-1.);\n"
+"const float pi = acos(-1.);\n"
+"\n"
+"//distance to spline with parameter t\n"
+"float dist(vec3 p0,vec3 p1,vec3 p2,vec3 x,float t)\n"
+"{\n"
+"    t = clamp(t, 0., 1.);\n"
+"    return length(x-pow(1.-t,2.)*p0-2.*(1.-t)*t*p1-t*t*p2);\n"
+"}\n"
+"\n"
+"//minimum distance to spline\n"
+"void dspline3(in vec3 x, in vec3 p0, in vec3 p1, in vec3 p2, out float ds)\n"
+"{\n"
+"    //coefficients for 0 = t^3 + a * t^2 + b * t + c\n"
+"    vec3 E = x-p0, F = p2-2.*p1+p0, G = p1-p0,\n"
+"    	ai = vec3(3.*dot(G,F), 2.*dot(G,G)-dot(E,F), -dot(E,G))/dot(F,F);\n"
+"\n"
+"	//discriminant and helpers\n"
+"    float tau = ai.x/3., p = ai.y-tau*ai.x, q = - tau*(tau*tau+p)+ai.z, dis = q*q/4.+p*p*p/27.;\n"
+"    \n"
+"    //triple real root\n"
+"    if(dis > 0.) \n"
+"    {\n"
+"        vec2 ki = -.5*q*c.xx+sqrt(dis)*c.xz, ui = sign(ki)*pow(abs(ki), c.xx/3.);\n"
+"        ds = dist(p0,p1,p2,x,ui.x+ui.y-tau);\n"
+"        return;\n"
+"    }\n"
+"    \n"
+"    //three distinct real roots\n"
+"    float fac = sqrt(-4./3.*p), arg = acos(-.5*q*sqrt(-27./p/p/p))/3.;\n"
+"    vec3 t = c.zxz*fac*cos(arg*c.xxx+c*pi/3.)-tau;\n"
+"    ds = min(\n"
+"        dist(p0,p1,p2,x, t.x),\n"
+"        min(\n"
+"            dist(p0,p1,p2,x,t.y),\n"
+"            dist(p0,p1,p2,x,t.z)\n"
+"        )\n"
+"    );\n"
 "}\n"
 "\0";
 const char *hexagontunnel_source = "/* Endeavor by Team210 - 64k intro by Team210 at Revision 2k19\n"
@@ -631,7 +672,7 @@ const char *voronoinet_source = "/* Corfield Imitation 1\n"
 "            normal(x,n);\n"
 "            \n"
 "            mat3 RR;\n"
-"            rot3(na*1.e3*vec3(1.1,1.5,1.9),RR);\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+iNote*210.,RR);\n"
 "            col = mix(mix(.0,.3,clamp(x.z/.3,0.,1.))*(.5+.5*mat)*c.xxx,(1.+.8*mat)*abs(RR*RR*vec3(.7,.5,.26)),step(x.z,.08));\n"
 "            col = mix(col,(1.+.8*mat)*abs(RR*vec3(.6,.12,.06)),step(.19,x.z));\n"
 "\n"
@@ -1052,7 +1093,7 @@ const char *team210_logo_source = "/* Endeavor by Team210 - 64k intro by Team210
 "    na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
 "    \n"
 "    mat3 RRR;\n"
-"    rot3(na*1.e3*vec3(1.1,1.5,1.9),RRR);\n"
+"    rot3(na*1.e3*vec3(1.1,1.5,1.9)+iNote*210.,RRR);\n"
 "\n"
 "    orange = mix((.5+.5*n.y)*orange,(1.+.8*mat)*abs(RRR*orange),.5+.5*n.x);\n"
 "    orange = mix(orange,.2*RRR*orange,.5+.5*n.y);\n"
@@ -1549,7 +1590,7 @@ const char *chips_source = "/* Corfield Imitation 1\n"
 "            	col = mix(col, 1.6*vec3(0.88,0.77,0.99), step(.018,x.z));\n"
 "            }\n"
 "            mat3 RR;\n"
-"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col)+iNote*210.,RR);\n"
 "\n"
 "            col = mix(col,.3*abs(RR*col),.5+.5*sin(1.*length(x.xy)+length(col)));\n"
 "            col = mix(col,abs(RR*col),.5+.5*cos(21.*x.z+length(col)));\n"
@@ -1809,7 +1850,7 @@ const char *doublependulum_source = "/* Corfield Imitation 1\n"
 "            rand(floor(.33*iTime)*c.xx+1., nal);\n"
 "            na = mix(na,nal,clamp(((.33*iTime-floor(.33*iTime))-.9)/.1,0.,1.));\n"
 "             mat3 RR;\n"
-"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col),RR);\n"
+"            rot3(na*1.e3*vec3(1.1,1.5,1.9)+13.*length(col)+iNote*210.,RR);\n"
 "            col = abs(RR*col);\n"
 "            \n"
 "            col = mix(col, length(col)/sqrt(3)*c.xxx, .7);\n"
@@ -1959,6 +2000,202 @@ const char *midikeyboard_source = "#version 130\n\n"
 "    }\n"
 "    \n"
 "    fragColor = vec4(col,1.0);\n"
+"}\n"
+"\n"
+"void main()\n"
+"{\n"
+"    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+"}\n"
+"\0";
+const char *wursttunnel_source = "/* Corfield Imitation 1\n"
+" * Copyright (C) 2019  Alexander Kraus <nr4@z10.info>\n"
+" * \n"
+" * This program is free software: you can redistribute it and/or modify\n"
+" * it under the terms of the GNU General Public License as published by\n"
+" * the Free Software Foundation, either version 3 of the License, or\n"
+" * (at your option) any later version.\n"
+" * \n"
+" * This program is distributed in the hope that it will be useful,\n"
+" * but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+" * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+" * GNU General Public License for more details.\n"
+" * \n"
+" * You should have received a copy of the GNU General Public License\n"
+" * along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
+" */\n"
+"\n"
+"#version 130\n\n"
+"\n"
+"uniform float iTime;\n"
+"uniform float iFFTWidth;\n"
+"uniform float iScale;\n"
+"uniform float iHighScale;\n"
+"uniform float iNBeats;\n"
+"uniform float iDial0;\n"
+"uniform float iDial6;\n"
+"uniform float iDial7;\n"
+"uniform vec2 iResolution;\n"
+"uniform sampler1D iFFT;\n"
+"uniform float iNote;\n"
+"uniform float iPressure;\n"
+"\n"
+"// Global constants\n"
+"const float pi = acos(-1.);\n"
+"const vec3 c = vec3(1.0, 0.0, -1.0);\n"
+"float a = 1.0;\n"
+"\n"
+"void rand(in vec2 x, out float num);\n"
+"void lfnoise(in vec2 t, out float n);\n"
+"void stroke(in float d0, in float s, out float d);\n"
+"void dspline3(in vec3 x, in vec3 p0, in vec3 p1, in vec3 p2, out float ds);\n"
+"void rot3(in vec3 p, out mat3 rot);\n"
+"\n"
+"void dtruchet3(in vec3 x, in float size, out float d)\n"
+"{\n"
+"    vec3 y = mod(x, size)-.5*size,\n"
+"        ind = (x-y)/size;\n"
+"    \n"
+"    vec3 r;\n"
+"    lfnoise(ind.xy-.1*iTime, r.x);\n"
+"    lfnoise(ind.yz-.1*iTime, r.y);\n"
+"    lfnoise(ind.zx-.1*iTime, r.z);\n"
+"    \n"
+"    mat3 RR;\n"
+"    rot3(floor(12.*r)*pi/2., RR);\n"
+"    \n"
+"    dspline3(RR*y, .5*size*c.zyy, c.yyy, .5*size*c.yzy, d);\n"
+"    float da;\n"
+"    dspline3(RR*y, .5*size*c.yyz, c.yyy, .5*size*c.xyy, da);\n"
+"    d = min(d, da);\n"
+"    dspline3(RR*y, .5*size*c.yxy, c.yyy, .5*size*c.yyx, da);\n"
+"    d = min(d, da);\n"
+"    \n"
+"    vec3 na, nb;\n"
+"    lfnoise(62.*x.x*c.xx-1.*iTime, na.x);\n"
+"    lfnoise(72.*x.y*c.xx-1.3*iTime, na.y);\n"
+"    lfnoise(-62.*x.x*c.xx+1.*iTime, nb.x);\n"
+"    lfnoise(-72.*x.y*c.xx+1.3*iTime, nb.y);\n"
+"    \n"
+"    stroke(d, .125*size+mix(.005,.007,iScale)*na.x*na.y-mix(.005,01,iScale)*nb.x*nb.y, d);\n"
+"}\n"
+"\n"
+"// Scene\n"
+"float mat;\n"
+"void scene(in vec3 x, out vec2 d)\n"
+"{\n"
+"	x.z -= mix(.1,1.,iDial0)*iTime;\n"
+"    float n;\n"
+"    lfnoise(3.*x.z*c.xx-.1*iTime, n);\n"
+"    n = .5+.5*n;\n"
+"    \n"
+"    vec2 cs = vec2(cos(iTime+3.*n), sin(iTime+3.*n));\n"
+"    mat2 r2 = mat2(cs.x,cs.y,-cs.y,cs.x);\n"
+"    x.xy = r2 * x.xy;\n"
+"    \n"
+"    d = c.xx;\n"
+"    dtruchet3(x, .1, d.x);\n"
+"}\n"
+"\n"
+"// Normal\n"
+"const float dx = 5.e-4;\n"
+"void normal(in vec3 x, out vec3 n);\n"
+"\n"
+"// Texture\n"
+"void colorize(in vec2 x, out vec3 col)\n"
+"{    \n"
+"    float phi = .1*iTime;\n"
+"    \n"
+"    vec3 white = vec3(0.89,0.44,0.23),\n"
+"        gray =vec3(0.25,0.23,0.21);\n"
+"    float size = .1;\n"
+"    \n"
+"    \n"
+"    vec2 y = mod(x,size)-.5*size;\n"
+"    y = abs(y)-.001;\n"
+"    \n"
+"    float d = min(y.x,y.y);\n"
+"    col = mix(white, gray, smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d*mat));\n"
+"}\n"
+"\n"
+"void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+"{\n"
+"    // Set up coordinates\n"
+"    a = iResolution.x/iResolution.y;\n"
+"    vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);\n"
+"    vec3 col = c.yyy;\n"
+"    \n"
+"    if(length(uv) > .5)\n"
+"    {\n"
+"        fragColor = vec4(col, 0.);\n"
+"        return;\n"
+"    }\n"
+"    \n"
+"     // Camera setup\n"
+"    float pp = .3*iTime;\n"
+"    vec3 o = c.yyx,\n"
+"        t = c.yyy,\n"
+"        dir = normalize(t-o),\n"
+"        r = normalize(c.xyy),\n"
+"        u = normalize(cross(r,dir)),\n"
+"        n,\n"
+"        x,\n"
+"        l;\n"
+"    t += uv.x*r + uv.y*u;\n"
+"    dir = normalize(t-o);\n"
+"    vec2 s;\n"
+"    float d = 0.;//-(o.z-.03)/dir.z;\n"
+"    int N = 450,\n"
+"        i;\n"
+"    \n"
+"    // Graph\n"
+"    x = o + d * dir;\n"
+"    mat3 RR;\n"
+"            vec3 ra;\n"
+"            rand(iNote*c.xx+3337., ra.x);\n"
+"            rand(iNote*c.xx+1337., ra.y);\n"
+"            rand(iNote*c.xx+2337., ra.z);\n"
+"            rot3((iNote-48.)*810.*ra,RR);\n"
+"    // Actual Scene\n"
+"    {\n"
+"\n"
+"        // Raymarching\n"
+"        for(i=0; i<N; ++i)\n"
+"        {\n"
+"            x = o + d * dir;\n"
+"            scene(x,s);\n"
+"            if(s.x < 1.e-4) break;\n"
+"            d += min(s.x,.01);\n"
+"        }\n"
+"\n"
+"        // Illumination\n"
+"        l = normalize(x-.1*c.yyx);\n"
+"        if(i<N)\n"
+"        {\n"
+"            normal(x,n);\n"
+"            \n"
+"            vec3 lo = vec3(0.69,0.23,0.22),\n"
+"                hi = vec3(1.00,0.33,0.27);\n"
+"            col  = mix(hi, lo, tanh(d/3.));\n"
+"            \n"
+"            col = abs(RR*col);\n"
+"            col = mix(col, .3*c.xxx, .6);\n"
+"//             col = mix(col, .3*length(col)/sqrt(3.)*c.xxx, iPressure);\n"
+"//             col = mix(col, c.yyy, clamp(float(i)/float(N),0.,1.));\n"
+"        }\n"
+"    }\n"
+"    \n"
+"    // Colorize\n"
+"    col = .2*col\n"
+"        + 1.8*col*abs(dot(l,n))\n"
+"        +1.6*abs(RR*vec3(1.00,0.33,0.27))*(pow(dot(reflect(-l,n),dir),9.));\n"
+"    col = clamp(col, 0.,1.);\n"
+"    if(length(col)<.01)col = .1*abs(RR*vec3(0.69,0.23,0.22));\n"
+"        \n"
+"    float dd;\n"
+"    rand(1200.*uv, dd);\n"
+"    col += dd*.1*c.xxx;\n"
+"    \n"
+"    fragColor = clamp(vec4(col,1.0),0.,1.);\n"
 "}\n"
 "\n"
 "void main()\n"
@@ -2239,6 +2476,19 @@ void Loadrand3()
 #endif
     progress += .2/(float)nsymbols;
 }
+void Loaddspline3()
+{
+    int dspline3_size = strlen(dspline3_source);
+    dspline3_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(dspline3_handle, 1, (GLchar **)&dspline3_source, &dspline3_size);
+    glCompileShader(dspline3_handle);
+#ifdef DEBUG
+    printf("---> dspline3 Shader:\n");
+    debug(dspline3_handle);
+    printf(">>>>\n");
+#endif
+    progress += .2/(float)nsymbols;
+}
 
 void LoadSymbols()
 {
@@ -2284,8 +2534,10 @@ void LoadSymbols()
     updateBar();
     Loadrand3();
     updateBar();
+    Loaddspline3();
+    updateBar();
 }
-int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle, doublependulum_program, doublependulum_handle, midikeyboard_program, midikeyboard_handle;
+int hexagontunnel_program, hexagontunnel_handle, voronoinet_program, voronoinet_handle, startunnel_program, startunnel_handle, team210_logo_program, team210_logo_handle, broccoli_program, broccoli_handle, chips_program, chips_handle, doublependulum_program, doublependulum_handle, midikeyboard_program, midikeyboard_handle, wursttunnel_program, wursttunnel_handle;
 int hexagontunnel_iTime_location;
 hexagontunnel_iFFTWidth_location;
 hexagontunnel_iScale_location;
@@ -2382,7 +2634,19 @@ midikeyboard_iResolution_location;
 midikeyboard_iFFT_location;
 midikeyboard_iNote_location;
 midikeyboard_iPressure_location;
-const int nprograms = 8;
+int wursttunnel_iTime_location;
+wursttunnel_iFFTWidth_location;
+wursttunnel_iScale_location;
+wursttunnel_iHighScale_location;
+wursttunnel_iNBeats_location;
+wursttunnel_iDial0_location;
+wursttunnel_iDial6_location;
+wursttunnel_iDial7_location;
+wursttunnel_iResolution_location;
+wursttunnel_iFFT_location;
+wursttunnel_iNote_location;
+wursttunnel_iPressure_location;
+const int nprograms = 9;
 
 void Loadhexagontunnel()
 {
@@ -2724,6 +2988,47 @@ void Loadmidikeyboard()
     progress += .2/(float)nprograms;
 }
 
+void Loadwursttunnel()
+{
+    int wursttunnel_size = strlen(wursttunnel_source);
+    wursttunnel_handle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(wursttunnel_handle, 1, (GLchar **)&wursttunnel_source, &wursttunnel_size);
+    glCompileShader(wursttunnel_handle);
+#ifdef DEBUG
+    printf("---> wursttunnel Shader:\n");
+    debug(wursttunnel_handle);
+    printf(">>>>\n");
+#endif
+    wursttunnel_program = glCreateProgram();
+    glAttachShader(wursttunnel_program,wursttunnel_handle);
+    glAttachShader(wursttunnel_program,rand_handle);
+    glAttachShader(wursttunnel_program,lfnoise_handle);
+    glAttachShader(wursttunnel_program,stroke_handle);
+    glAttachShader(wursttunnel_program,dspline3_handle);
+    glAttachShader(wursttunnel_program,rot3_handle);
+    glAttachShader(wursttunnel_program,normal_handle);
+    glLinkProgram(wursttunnel_program);
+#ifdef DEBUG
+    printf("---> wursttunnel Program:\n");
+    debugp(wursttunnel_program);
+    printf(">>>>\n");
+#endif
+    glUseProgram(wursttunnel_program);
+    wursttunnel_iTime_location = glGetUniformLocation(wursttunnel_program, "iTime");
+    wursttunnel_iFFTWidth_location = glGetUniformLocation(wursttunnel_program, "iFFTWidth");
+    wursttunnel_iScale_location = glGetUniformLocation(wursttunnel_program, "iScale");
+    wursttunnel_iHighScale_location = glGetUniformLocation(wursttunnel_program, "iHighScale");
+    wursttunnel_iNBeats_location = glGetUniformLocation(wursttunnel_program, "iNBeats");
+    wursttunnel_iDial0_location = glGetUniformLocation(wursttunnel_program, "iDial0");
+    wursttunnel_iDial6_location = glGetUniformLocation(wursttunnel_program, "iDial6");
+    wursttunnel_iDial7_location = glGetUniformLocation(wursttunnel_program, "iDial7");
+    wursttunnel_iResolution_location = glGetUniformLocation(wursttunnel_program, "iResolution");
+    wursttunnel_iFFT_location = glGetUniformLocation(wursttunnel_program, "iFFT");
+    wursttunnel_iNote_location = glGetUniformLocation(wursttunnel_program, "iNote");
+    wursttunnel_iPressure_location = glGetUniformLocation(wursttunnel_program, "iPressure");
+    progress += .2/(float)nprograms;
+}
+
 void LoadPrograms()
 {
     Loadhexagontunnel();
@@ -2741,6 +3046,8 @@ void LoadPrograms()
     Loaddoublependulum();
     updateBar();
     Loadmidikeyboard();
+    updateBar();
+    Loadwursttunnel();
     updateBar();
 }
 #endif
