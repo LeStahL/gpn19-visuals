@@ -36,6 +36,8 @@ int _fltused = 0;
 #include "glext.h"
 #include "fftw3.h"
 
+#include "png.h"
+
 // Standard library and CRT rewrite for saving executable size
 void *memset(void *ptr, int value, size_t num)
 {

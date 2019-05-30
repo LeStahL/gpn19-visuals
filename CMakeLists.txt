@@ -48,6 +48,7 @@ if(WIN32)
     add_subdirectory(thirdparty/fftw-3.3.8)
     find_library(FFTW3_LIBRARY fftw3.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release")
     file(COPY "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release/fftw3.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
+    include_directories("${PROJECT_SOURCE_DIR}/thirdparty/fftw-3.3.8/api")
     
     add_subdirectory(thirdparty/zlib)
     find_library(ZLIB_LIBRARY zlib.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release")
@@ -56,8 +57,7 @@ if(WIN32)
     
     add_subdirectory(thirdparty/libpng)
     file(COPY "${PROJECT_BINARY_DIR}/thirdparty/libpng/Release/libpng16.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
-    
-    include_directories("${PROJECT_SOURCE_DIR}/thirdparty/fftw-3.3.8/api")
+    include_directories("${PROJECT_SOURCE_DIR}/thirdparty/libpng" "${PROJECT_BINARY_DIR}/thirdparty/libpng")
     
     add_definitions(/Gy /O1 /fp:fast /GR- /GS- /MT)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:demo /SUBSYSTEM:Windows  /OPT:REF  /OPT:ICF=10 /VERBOSE /NODEFAULTLIB") 
