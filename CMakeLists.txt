@@ -49,6 +49,14 @@ if(WIN32)
     find_library(FFTW3_LIBRARY fftw3.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release")
     file(COPY "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release/fftw3.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
     
+    add_subdirectory(thirdparty/zlib)
+    find_library(ZLIB_LIBRARY zlib.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release")
+    set(ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/thirdparty/zlib" "${PROJECT_BINARY_DIR}/thirdparty/zlib")
+    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release/zlib1.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
+    
+    add_subdirectory(thirdparty/libpng)
+    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/libpng/Release/libpng16.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
+    
     include_directories("${PROJECT_SOURCE_DIR}/thirdparty/fftw-3.3.8/api")
     
     add_definitions(/Gy /O1 /fp:fast /GR- /GS- /MT)
