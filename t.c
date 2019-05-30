@@ -182,17 +182,7 @@ double
     dial_4_value,
     dial_5_value,
     dial_6_value,
-    dial_7_value,
-    dial_0_location,
-    dial_1_location,
-    dial_2_location,
-    dial_3_location,
-    dial_4_location,
-    dial_5_location,
-    dial_6_location,
-    dial_7_location
-    
-    
+    dial_7_value
     ;
 int
     // Loading bar
@@ -1103,14 +1093,6 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     fader_5_location = glGetUniformLocation(post_program, "iFader5");
     fader_6_location = glGetUniformLocation(post_program, "iFader6");
     fader_7_location = glGetUniformLocation(post_program, "iFader7");
-    dial_0_location = glGetUniformLocation(post_program, "iDial0");
-    dial_1_location = glGetUniformLocation(post_program, "iDial1");
-    dial_2_location = glGetUniformLocation(post_program, "iDial2");
-    dial_3_location = glGetUniformLocation(post_program, "iDial3");
-    dial_4_location = glGetUniformLocation(post_program, "iDial4");
-    dial_5_location = glGetUniformLocation(post_program, "iDial5");
-    dial_6_location = glGetUniformLocation(post_program, "iDial6");
-    dial_7_location = glGetUniformLocation(post_program, "iDial7");
     printf("++++ Post shader created.\n");
     
     // Create framebuffer for rendering first pass to
