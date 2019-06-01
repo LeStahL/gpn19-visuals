@@ -961,6 +961,16 @@ void CALLBACK MidiInProc_apc40mk2(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, 
                     override_index += 1;
             }
         }
+        if(b3hi == 0x5)
+        {
+            if(b4 == 0x80)
+            {
+                if(b3lo == 0xe)
+                    t_start = (double)milliseconds_now()*1.e-3;
+                else if(b3lo == 0xf)
+                    t_start -= 1.e6;
+            }
+        }
         printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x h_%01x l_%01x %02x\n", dwParam1, b1, b2, b3hi, b3lo, b4);
         
 		break;
@@ -1465,4 +1475,6 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     }
     return msg.wParam;
 }
+
+
 
