@@ -67,6 +67,46 @@ void lfnoise(in vec2 t, out float n)
     n = mix(v1.x, v1.y, t.x);
 }
 
+void dvoronoi(in vec2 x, out float d, out vec2 z)
+{
+    vec2 y = floor(x);
+       float ret = 1.;
+    vec2 pf=c.yy, p;
+    float df=10.;
+    
+    for(int i=-1; i<=1; i+=1)
+        for(int j=-1; j<=1; j+=1)
+        {
+            p = y + vec2(float(i), float(j));
+            float pa;
+            rand(p, pa);
+            p += pa;
+            
+            d = length(x-p);
+            
+            if(d < df)
+            {
+                df = d;
+                pf = p;
+            }
+        }
+    for(int i=-1; i<=1; i+=1)
+        for(int j=-1; j<=1; j+=1)
+        {
+            p = y + vec2(float(i), float(j));
+            float pa;
+            rand(p, pa);
+            p += pa;
+            
+            vec2 o = p - pf;
+            d = length(.5*o-dot(x-pf, o)/dot(o,o)*o);
+            ret = min(ret, d);
+        }
+    
+    d = ret;
+    z = pf;
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec4 col = vec4(0.);
@@ -92,7 +132,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     }
     
     // LF noise
-    else if(iFader2 > 0.)
+    if(iFader2 > 0.)
     {
         lfnoise(22.*fragCoord/iResolution-3.*iTime, n.x);
         lfnoise(22.*fragCoord/iResolution-3.*iTime-1337., n.y);
@@ -100,7 +140,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     }
     
     // Kaleidoscope
-    else if(iFader3 > 0.)
+    if(iFader3 > 0.)
     {
         float a = iResolution.x/iResolution.y;
         vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
@@ -109,6 +149,19 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         n.x = floor(mix(3.,10.,iFader3));
         float phi = abs(mod(atan(uv.y, uv.x),pi/n.x)-.5*pi/n.x);
         uv = length(uv)*vec2(cos(phi), sin(phi));
+        fragCoord = (uv + .5*vec2(a,1.))*iResolution.yy;
+    }
+    
+    if(iFader4 > 0.)
+    {
+        float a = iResolution.x/iResolution.y;
+        vec2 uv = fragCoord/iResolution.yy-0.5*vec2(a, 1.0);
+        
+        float dv;
+        vec2 ind;
+        dvoronoi(mix(1.,100.,1.-iFader4)*uv, dv, ind);
+        uv = ind/mix(1.,100.,1.-iFader4);
+        
         fragCoord = (uv + .5*vec2(a,1.))*iResolution.yy;
     }
     

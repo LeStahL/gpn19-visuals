@@ -971,7 +971,11 @@ void CALLBACK MidiInProc_apc40mk2(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, 
                     t_start -= 1.e6;
             }
         }
-        printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x h_%01x l_%01x %02x\n", dwParam1, b1, b2, b3hi, b3lo, b4);
+        if(b3hi == 0x0)
+        {
+             override_index = b3lo + 1;
+        }
+        printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x h_%01x l_%01x %02x, dwParam2=%08x\n", dwParam1, b1, b2, b3hi, b3lo, b4, dwParam2);
         
 		break;
 	case MIM_LONGDATA:
@@ -1475,6 +1479,4 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     }
     return msg.wParam;
 }
-
-
 
