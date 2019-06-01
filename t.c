@@ -244,6 +244,7 @@ GLenum error;
 // Read PNG files
 void loadPNG(char *filename, int *w, int *h, GLubyte **data)
 {
+    printf("Loading PNG: %s\n", filename);
     png_structp png_struct;
     png_bytepp png_rows;
     png_infop png_info;
@@ -257,7 +258,11 @@ void loadPNG(char *filename, int *w, int *h, GLubyte **data)
     if(png_sig_cmp(png_hdr, 0, 8))
         printf("%s is not a valid png file.\n", filename);
     png_struct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if(!png_struct)
+        printf("Failed to create png read struct.\n");
     png_info = png_create_info_struct(png_struct);
+    if(!png_info)
+        printf("Failed to create png info struct.\n");
     png_init_io(png_struct, f);
     png_set_sig_bytes(png_struct, 8);
     png_read_info(png_struct, png_info);
@@ -265,16 +270,18 @@ void loadPNG(char *filename, int *w, int *h, GLubyte **data)
     png_height = png_get_image_height(png_struct, png_info);
     png_color_type = png_get_color_type(png_struct, png_info);
     png_bit_depth = png_get_bit_depth(png_struct, png_info);
-    png_read_png(png_struct, png_info, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
-    png_rows = png_get_rows(png_struct, png_info);
+    printf("PNG is: w=%d, h=%d\n", png_width, png_height);
     
-    unsigned int row_bytes = png_get_rowbytes(png_struct, png_info);
-    *data = (unsigned char*) malloc(row_bytes * png_height);
-    for(int i=0; i<png_height; ++i)
-        memcpy(*data+(row_bytes * (png_height-1-i)), png_rows[i], row_bytes);
-    *w = png_width;
-    *h = png_height;
-    
+//     png_read_png(png_struct, png_info, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
+//     png_rows = png_get_rows(png_struct, png_info);
+//     printf("PNG reading done.\n");
+//     unsigned int row_bytes = png_get_rowbytes(png_struct, png_info);
+//     *data = (unsigned char*) malloc(row_bytes * png_height);
+//     for(int i=0; i<png_height; ++i)
+//         memcpy(*data+(row_bytes * (png_height-1-i)), png_rows[i], row_bytes);
+//     *w = png_width;
+//     *h = png_height;
+//     
     fclose(f);
 }
 
@@ -758,7 +765,7 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 #define TOPROW 0x2
 #define MIDDLEROW 0x3
 #define BOTTOMROW 0x4
-void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+void CALLBACK MidiInProc_nanokontrol(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
 {
 	switch(wMsg) {
 	case MIM_OPEN:
@@ -861,7 +868,7 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwP
 	return;
 }
 
-void CALLBACK MidiInProc2(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+void CALLBACK MidiInProc_lpk25(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
 {
 	switch(wMsg) {
 	case MIM_OPEN:
@@ -885,6 +892,76 @@ void CALLBACK MidiInProc2(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dw
 //             note = 0.;
         }
 //         printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x %01x %01x %02x\n", dwParam1, b1, b2, b3hi, b3lo, b4);
+        
+		break;
+	case MIM_LONGDATA:
+		break;
+	case MIM_ERROR:
+		break;
+	case MIM_LONGERROR:
+		break;
+	case MIM_MOREDATA:
+		break;
+	default:
+		break;
+	}
+	return;
+}
+
+#define APC_TOPDIAL 0x3
+#define APC_RIGHTDIAL 0x1
+#define APC_FADER
+#define APC_BUTTONMATRIX 0x2
+void CALLBACK MidiInProc_apc40mk2(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
+{
+	switch(wMsg) {
+	case MIM_OPEN:
+		break;
+	case MIM_CLOSE:
+		break;
+	case MIM_DATA:
+        BYTE b1 = (dwParam1 >> 24) & 0xFF,
+            b2 = (dwParam1 >> 16) & 0xFF,
+            b3 = (dwParam1 >> 8) & 0xFF,
+            b4 = dwParam1 & 0xFF;
+        BYTE b3lo = b3 & 0xF,
+            b3hi = (b3 >> 4) & 0xF;
+        if(b3hi == APC_TOPDIAL)
+        {
+            if(b3lo == 0x0) dial_0_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x1) dial_1_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x2) dial_2_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x3) dial_3_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x4) dial_4_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x5) dial_5_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x6) dial_6_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x7) dial_7_value = (float)b2/(float)0x7F;
+        }
+        if(b3hi == APC_RIGHTDIAL)
+        {
+            if(b3lo == 0x0) fader_0_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x1) fader_1_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x2) fader_2_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x3) fader_3_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x4) fader_4_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x5) fader_5_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x6) fader_6_value = (float)b2/(float)0x7F;
+            else if(b3lo == 0x7) fader_7_value = (float)b2/(float)0x7F;
+        }
+        if(b3hi == APC_BUTTONMATRIX)
+        {
+        }
+        if(b3hi == 0x6)
+        {
+            if(b4 == 0x80)
+            {
+                if(b3lo == 0x1)
+                    override_index = max(override_index-1, 1);
+                else if(b3lo == 0x0)
+                    override_index += 1;
+            }
+        }
+        printf("wMsg=MIM_DATA, dwParam1=%08x, byte=%02x %02x h_%01x l_%01x %02x\n", dwParam1, b1, b2, b3hi, b3lo, b4);
         
 		break;
 	case MIM_LONGDATA:
@@ -1305,12 +1382,9 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     
     // Setup MIDI controller
-    HMIDIIN hMidiDevice = NULL;;
-	DWORD nMidiPort = 0;
 	UINT nMidiDeviceNum;
-	MMRESULT rv;
-	MIDIINCAPS caps;
-
+    MIDIINCAPS caps;
+    
 	nMidiDeviceNum = midiInGetNumDevs();
 	if(nMidiDeviceNum == 0) 
     {
@@ -1323,20 +1397,36 @@ int WINAPI demo(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, in
         {
             midiInGetDevCaps(i, &caps, sizeof(MIDIINCAPS));
             printf("->%d: %s\n", i, caps.szPname);
+            
+            if(!strcmp("nanoKONTROL2", caps.szPname))
+            {
+                HMIDIIN hMidiDevice;
+                MMRESULT rv = midiInOpen(&hMidiDevice, i, (DWORD)(void*)MidiInProc_nanokontrol, 0, CALLBACK_FUNCTION);
+                midiInStart(hMidiDevice);
+            }
+            if(!strcmp("APC40 mkII", caps.szPname))
+            {
+                HMIDIIN hMidiDevice;
+                MMRESULT rv = midiInOpen(&hMidiDevice, i, (DWORD)(void*)MidiInProc_apc40mk2, 0, CALLBACK_FUNCTION);
+                midiInStart(hMidiDevice);
+            }
+            if(!strcmp("LPK25", caps.szPname))
+            {
+                HMIDIIN hMidiDevice;
+                MMRESULT rv = midiInOpen(&hMidiDevice, i, (DWORD)(void*)MidiInProc_lpk25, 0, CALLBACK_FUNCTION);
+                midiInStart(hMidiDevice);
+            }
         }
     }
-    
-    rv = midiInOpen(&hMidiDevice, nMidiPort, (DWORD)(void*)MidiInProc, 0, CALLBACK_FUNCTION);
-    midiInStart(hMidiDevice);
-    
+/*    
     // Setup MIDI keyboard
-    HMIDIIN hMidiDevice_2 = NULL;;
+    HMIDIIN hMidiDevice_2 = NULL;
 	DWORD nMidiPort_2 = 1;
 	MMRESULT rv_2;
-	MIDIINCAPS caps_2;
+	MIDIINCAPS caps_2;*/
 
-    rv = midiInOpen(&hMidiDevice_2, nMidiPort_2, (DWORD)(void*)MidiInProc2, 0, CALLBACK_FUNCTION);
-    midiInStart(hMidiDevice_2);
+//     rv = midiInOpen(&hMidiDevice_2, nMidiPort_2, (DWORD)(void*)MidiInProc2, 0, CALLBACK_FUNCTION);
+//     midiInStart(hMidiDevice_2);
     
     // Load png
     int png_width, png_height;
