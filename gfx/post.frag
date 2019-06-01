@@ -107,6 +107,13 @@ void dvoronoi(in vec2 x, out float d, out vec2 z)
     z = pf;
 }
 
+void rot3(in vec3 p, out mat3 rot)
+{
+    rot = mat3(c.xyyy, cos(p.x), sin(p.x), 0., -sin(p.x), cos(p.x))
+        *mat3(cos(p.y), 0., -sin(p.y), c.yxy, sin(p.y), 0., cos(p.y))
+        *mat3(cos(p.z), -sin(p.z), 0., sin(p.z), cos(p.z), c.yyyx);
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec4 col = vec4(0.);
@@ -152,6 +159,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         fragCoord = (uv + .5*vec2(a,1.))*iResolution.yy;
     }
     
+    // Voronoi tiles
     if(iFader4 > 0.)
     {
         float a = iResolution.x/iResolution.y;
@@ -174,6 +182,25 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             col += vec4(cl.r, cc.g, cr.b,1.);
         }
     col /= iFSAA;
+    
+    // Color
+    if(iFader5 > 0.)
+    {
+        mat3 RR;
+        vec3 ra;
+        rand(iFader5*c.xx+3337., ra.x);
+        rand(iFader5*c.xx+1337., ra.y);
+        rand(iFader5*c.xx+2337., ra.z);
+        rot3((iFader5-48.)*810.*ra+col.rgb,RR);
+        col.rgb = mix(col.rgb, abs(RR*col.rgb),col.rgb);
+    }
+    
+    // Grayscale
+    if(iFader6 > 0.)
+    {
+        col.rgb = mix(col.rgb, length(col.rgb)/sqrt(3.)*c.xxx, iFader6);
+    }
+    
     fragColor = col;
 }
 
