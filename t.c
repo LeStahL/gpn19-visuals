@@ -720,8 +720,8 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     int index = SendMessage(hSender, CB_GETCURSEL, 0, 0);
                     if(index == 0)
                     {
-                        w = 1920;
-                        h = 1080;
+                        w = 1920-16*5;
+                        h = 1080-9*5;
                     }
                     else if(index == 1)
                     {
