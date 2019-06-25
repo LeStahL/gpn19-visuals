@@ -42,7 +42,7 @@ if(WIN32)
     
     add_custom_target(symbolization
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/gfx/
-        COMMAND python symbolize.py hexagontunnel.frag voronoinet.frag startunnel.frag team210_logo.frag broccoli.frag chips.frag doublependulum.frag midikeyboard.frag wursttunnel.frag -o symbols.h
+        COMMAND python symbolize.py hexagontunnel.frag voronoinet.frag startunnel.frag team210_logo.frag broccoli.frag boxplane.frag doublependulum.frag midikeyboard.frag wursttunnel.frag  -o symbols.h
     )
     
     add_subdirectory(thirdparty/fftw-3.3.8)
@@ -50,22 +50,22 @@ if(WIN32)
     file(COPY "${PROJECT_BINARY_DIR}/thirdparty/fftw-3.3.8/Release/fftw3.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
     include_directories("${PROJECT_SOURCE_DIR}/thirdparty/fftw-3.3.8/api")
     
-    add_subdirectory(thirdparty/zlib)
-    find_library(ZLIB_LIBRARY zlib.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release")
-    set(ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/thirdparty/zlib" "${PROJECT_BINARY_DIR}/thirdparty/zlib")
-    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release/zlib1.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
-    
-    add_subdirectory(thirdparty/libpng)
-    find_library(PNG_LIBRARY libpng16.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/libpng/Release")
-    file(COPY "${PROJECT_BINARY_DIR}/thirdparty/libpng/Release/libpng16.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
-    include_directories("${PROJECT_SOURCE_DIR}/thirdparty/libpng" "${PROJECT_BINARY_DIR}/thirdparty/libpng")
+#     add_subdirectory(thirdparty/zlib)
+#     find_library(ZLIB_LIBRARY zlib.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release")
+#     set(ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/thirdparty/zlib" "${PROJECT_BINARY_DIR}/thirdparty/zlib")
+#     file(COPY "${PROJECT_BINARY_DIR}/thirdparty/zlib/Release/zlib1.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
+#     
+#     add_subdirectory(thirdparty/libpng)
+#     find_library(PNG_LIBRARY libpng16.lib HINTS "${PROJECT_BINARY_DIR}/thirdparty/libpng/Release")
+#     file(COPY "${PROJECT_BINARY_DIR}/thirdparty/libpng/Release/libpng16.dll" DESTINATION "${PROJECT_BINARY_DIR}/Release")
+#     include_directories("${PROJECT_SOURCE_DIR}/thirdparty/libpng" "${PROJECT_BINARY_DIR}/thirdparty/libpng")
     
     add_definitions(/Gy /O1 /fp:fast /GR- /GS- /MT)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:demo /SUBSYSTEM:Windows  /OPT:REF  /OPT:ICF=10 /VERBOSE /NODEFAULTLIB") #    Add  for demos 
     add_executable(gpn19-visuals t.c)
     
     # for debug output: User32.lib ucrt.lib msvcrt.lib
-    target_link_libraries(gpn19-visuals opengl32.lib Winmm.lib User32.lib ucrt.lib msvcrt.lib ${FFTW3_LIBRARY} ${PNG_LIBRARY})
+    target_link_libraries(gpn19-visuals opengl32.lib Winmm.lib User32.lib ucrt.lib msvcrt.lib ${FFTW3_LIBRARY})
     
     add_dependencies(gpn19-visuals fftw3.dll)
     add_dependencies(gpn19-visuals minification)

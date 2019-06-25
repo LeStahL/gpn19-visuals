@@ -37,8 +37,6 @@ int _fltused = 0;
 #include "glext.h"
 #include "fftw3.h"
 
-#include "png.h"
-
 // Standard library and CRT rewrite for saving executable size
 void *memset(void *ptr, int value, size_t num)
 {
@@ -240,50 +238,6 @@ HDC hdc;
 HGLRC glrc;
 GLenum error;
 #define NSHADERS 3.
-
-// Read PNG files
-void loadPNG(char *filename, int *w, int *h, GLubyte **data)
-{
-    printf("Loading PNG: %s\n", filename);
-    png_structp png_struct;
-    png_bytepp png_rows;
-    png_infop png_info;
-    int png_width, png_height, png_npasses;
-    png_byte png_color_type, png_bit_depth;
-    char png_hdr[8];
-    FILE *f = fopen(filename, "rb");
-    if(!f)
-        printf("Could not open winkefuchs1.png\n");
-    fread(png_hdr, 1, 8, f);
-    if(png_sig_cmp(png_hdr, 0, 8))
-        printf("%s is not a valid png file.\n", filename);
-    png_struct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if(!png_struct)
-        printf("Failed to create png read struct.\n");
-    png_info = png_create_info_struct(png_struct);
-    if(!png_info)
-        printf("Failed to create png info struct.\n");
-    png_init_io(png_struct, f);
-    png_set_sig_bytes(png_struct, 8);
-    png_read_info(png_struct, png_info);
-    png_width = png_get_image_width(png_struct, png_info);
-    png_height = png_get_image_height(png_struct, png_info);
-    png_color_type = png_get_color_type(png_struct, png_info);
-    png_bit_depth = png_get_bit_depth(png_struct, png_info);
-    printf("PNG is: w=%d, h=%d\n", png_width, png_height);
-    
-//     png_read_png(png_struct, png_info, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
-//     png_rows = png_get_rows(png_struct, png_info);
-//     printf("PNG reading done.\n");
-//     unsigned int row_bytes = png_get_rowbytes(png_struct, png_info);
-//     *data = (unsigned char*) malloc(row_bytes * png_height);
-//     for(int i=0; i<png_height; ++i)
-//         memcpy(*data+(row_bytes * (png_height-1-i)), png_rows[i], row_bytes);
-//     *w = png_width;
-//     *h = png_height;
-//     
-    fclose(f);
-}
 
 void quad()
 {
@@ -512,17 +466,17 @@ void draw()
     }
     else if(override_index == 6)
     {
-        glUseProgram(chips_program);
-        glUniform1f(chips_iTime_location, t);
-        glUniform2f(chips_iResolution_location, w, h);
-        glUniform1f(chips_iScale_location, scale);
-        glUniform1f(chips_iNBeats_location, nbeats);
-        glUniform1f(chips_iHighScale_location, highscale);
-        glUniform1f(chips_iDial0_location, dial_0_value);
-        glUniform1f(chips_iDial6_location, dial_6_value);
-        glUniform1f(chips_iDial7_location, dial_7_value);
-        glUniform1f(chips_iNote_location, note);
-        glUniform1f(chips_iPressure_location, pressure);
+        glUseProgram(boxplane_program);
+        glUniform1f(boxplane_iTime_location, t);
+        glUniform2f(boxplane_iResolution_location, w, h);
+        glUniform1f(boxplane_iScale_location, scale);
+        glUniform1f(boxplane_iNBeats_location, nbeats);
+        glUniform1f(boxplane_iHighScale_location, highscale);
+        glUniform1f(boxplane_iDial0_location, dial_0_value);
+        glUniform1f(boxplane_iDial6_location, dial_6_value);
+        glUniform1f(boxplane_iDial7_location, dial_7_value);
+        glUniform1f(boxplane_iNote_location, note);
+        glUniform1f(boxplane_iPressure_location, pressure);
     }
     else if(override_index == 7)
     {
@@ -720,8 +674,8 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     int index = SendMessage(hSender, CB_GETCURSEL, 0, 0);
                     if(index == 0)
                     {
-                        w = 1920-16*5;
-                        h = 1080-9*5;
+                        w = 1920;
+                        h = 1080;
                     }
                     else if(index == 1)
                     {
